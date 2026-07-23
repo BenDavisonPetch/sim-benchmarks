@@ -40,7 +40,8 @@ The **only** callable names (SPEC §4). `validate.py` rejects any other identifi
 | `min, max` | element-wise/reducing min, max |
 | `J0, J1` | Bessel functions of the first kind, order 0 and 1 |
 | `Jn(n, ·)` | Bessel function of the first kind, order `n` |
-| `step(t, a, b)` | transition helper (§3) |
+| `step(t, a, b)` | transition helper (§2.1) |
+| `dipole(mx,my,mz, cx,cy,cz)` | point-dipole **B** field builtin (§2.2) |
 
 Plus the constant `pi` and standard arithmetic operators `+ - * / **`, parentheses, unary minus,
 and numeric literals (including scientific notation, e.g. `1e-5`). List indexing on a
@@ -62,6 +63,26 @@ Degenerate `a == b` gives a Heaviside step at `t = a` (`0` for `t < a`, `1` for 
 `a < b`, and any smooth `f(t)` composes from `step` and the allowed functions. This is why
 step-vs-ramp-vs-sinusoid do **not** fork identity — the BC-state expression is a value, not a
 capability (SPEC §2.3).
+
+### 2.2 `dipole(mx, my, mz, cx, cy, cz)` — field builtin
+
+A **vector-valued** field builtin: the magnetostatic field of a point dipole with moment vector
+`(mx, my, mz)` located at center `(cx, cy, cz)`, evaluated at the coordinate point. Its result is a
+vector, so it is assigned to the **vector** field name `B` (not to scalar components `Bx/By/Bz`):
+
+```yaml
+equilibrium:
+  - region: interior
+    fields:
+      B: "dipole(0, 0, m_z, 0, 0, 0.2)"     # axial dipole, moment +z, center offset +0.2 north
+```
+
+All six arguments are **positional scalar expressions** — no keyword arguments, no list literals
+(both outside this grammar). The dipole *strength* is authored **inline** from whatever the source
+states (e.g. a surface equatorial field via `m = B_eq R^3 / (mu0/4pi)`); it is **not** a
+precomputed number and **not** a problem-specific helper builtin. The field convention (the `mu0`
+factor / Gaussian vs SI) follows the entry's `units` (SPEC §12, units-as-authored); `validate.py`
+checks the expression structurally (AST), not its numeric value (SPEC_DEVIATIONS D-007).
 
 ---
 
@@ -148,5 +169,5 @@ function or builtin (e.g. a `dipole` field builtin):
 
 Both edits land in the **same commit**. Never extend the allow-list in `validate.py` without the
 matching entry here, and never reference a name in a spec before it is allow-listed. (The worked
-example's `dipole` builtin is exactly such a pending extension — see the implementation plan
-Stage 4.)
+example's `dipole` builtin was exactly such an extension, landed in Stage 4 — see §2.2 above and
+SPEC_DEVIATIONS D-015.)

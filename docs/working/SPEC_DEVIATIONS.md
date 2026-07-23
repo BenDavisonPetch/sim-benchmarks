@@ -295,3 +295,50 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
   leakage is not mechanically caught — a known, accepted limit of check 7.
 - Status: OPEN
 
+### D-015 [ELAB] `dipole` field builtin allow-listed; example B-IC written inline (gap-C)
+- Stage/date: Stage 4, 2026-07-23
+- Spec: §4 (allow-list extension protocol), docs/ic-expression-language.md §2.2/§8, IMPLEMENTATION_PLAN
+  Stage 4 (gap-C: "dipole builtin + step(t,a,b) in the allow-list")
+- Code: scripts/speclib.py (`FUNCTIONS["dipole"] = 6`); docs/ic-expression-language.md §2.2;
+  tests/mercury-magnetosphere-coupled-interior/spec.md (`initial_conditions.equilibrium[interior].B`)
+- What: added ONE general, vector-valued field builtin `dipole(mx,my,mz, cx,cy,cz)` to the §4
+  allow-list (doc §2.2). The worked example's B IC was rewritten from
+  `dipole(moment_from_surface_eq(195e-9, R_M), center=[0,0,0.2*R_M])` (which used a second,
+  problem-specific builtin + a keyword argument + a list literal, none in the §4 grammar) to
+  `dipole(0, 0, dipole_eq_nT * 1e-9 * R_M**3 / 1e-7, 0, 0, dipole_offset_RM)` — six positional
+  scalar args, the moment written **inline** from the surface-equatorial field (no helper builtin,
+  no agent-precomputed number, per the user's Stage-4 direction). The center offset `0.2*R_M`
+  (≈488 in R_M-unit coords — a units error) was corrected to the declared param `dipole_offset_RM`
+  (0.2 R_M). `step(t,a,b)` was already allow-listed (D-001), completing gap-C.
+- Why: gap-C is a mandated Stage-4 deliverable; the doc §8 protocol explicitly anticipated a
+  `dipole` field builtin. User declined both a precomputed-moment aux and adding a
+  `moment_from_surface_eq` builtin (former = error-prone hand derivation; latter = problem-specific
+  bloat), directing the moment be defined inline.
+- Impact: none. §11.2/§11 unaffected; check 6 passes structurally (AST-only per D-007 — the builtin
+  has arity only, no numpy impl). Field convention / units of the moment are units-as-authored
+  (§12) and flagged in the entry's pending_extraction.md, not enforced by validate.
+- Status: RESOLVED-Stage4
+
+### D-016 [DEV] `validate.py --offline` downgrades check-7 ref-membership to accept unverified refs
+- Stage/date: Stage 4, 2026-07-23
+- Spec: §5.3 (reference_result key "must be a verified references[] key"), §8.3 check 7
+- Code: scripts/validate.py (`check_refs(..., offline)`); SPEC §8.3 check 7 + §5.3 amended
+- What: §5.3/§8.3-check-7 require `reference_results[].key` (and a mode `inputs.reference` of
+  `kind: reference`) to be a **verified** `references[]` key. Offline authoring (§5.2B) can never
+  produce a `verified` ref, so a fully-offline entry that cites a reference_result could never pass
+  `validate.py --offline` — contradicting IMPLEMENTATION_PLAN Stage 4's "Done when: --offline
+  passes". Resolution (user-approved via Stage-4 grill): amend the spec so `--offline` downgrades
+  the check-7 membership target to `references[] ∪ references_unverified[]` (mirroring check 10's
+  offline downgrade); **online** still enforces verified-only. `validate.py` threads the `offline`
+  flag into `check_refs`. The example's cited refs (winslow2013, anderson2011, hauck2013,
+  slavin2009) were added to `references_unverified[]` as unverified claims (no fabricated
+  identifiers). Online `validate.py` (no `--offline`) still fails the example on check 7 by design,
+  until Stage 6 `/add-refs` verifies the refs online and moves them to `references[]`.
+- Why: genuine spec tension between §5.2B (offline ⇒ unverified) and §5.3 (reference_result ⇒
+  verified); escalated per the plan's "stop and re-grill on ambiguity" gate rather than improvised.
+  User chose the offline-downgrade amendment.
+- Impact: none to §11 invariants. §11.5 (no fabricated refs) intact — refs stay unverified and
+  INDEX-excluded; the trust boundary (verified⇒indexed) is preserved online. A deliberately looser
+  offline reading of §8.3 check 7, now written into the spec.
+- Status: RESOLVED-Stage4
+

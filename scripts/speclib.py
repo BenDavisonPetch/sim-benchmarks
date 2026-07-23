@@ -172,6 +172,9 @@ FUNCTIONS: dict[str, int | None] = {
     "min": None, "max": None,
     "J0": 1, "J1": 1, "Jn": 2,
     "step": 3,
+    # Field builtin (doc §2.2, §8): point-dipole B field, moment (mx,my,mz) at center
+    # (cx,cy,cz). Vector-valued; assigned to the vector field `B`. AST-only per D-007.
+    "dipole": 6,
 }
 
 # Binary / unary operators permitted (SPEC §4: + - * / ** and unary minus).

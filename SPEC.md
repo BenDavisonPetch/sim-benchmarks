@@ -402,7 +402,8 @@ value typed from memory.
 ### 5.3 `reference_results[]`
 ```yaml
 reference_results:
-  - key: dahlburg1989              # must be a verified references[] key
+  - key: dahlburg1989              # must be a verified references[] key (online); offline it may
+                                   # resolve to references_unverified[] — see §8.3 check 7
     params_used: { gamma: 1.6666666667 }   # only structural params, values as used
     method: "second-order Godunov, unstaggered CT"   # provenance ONLY (never in problem block)
     resolution: "1000x1000"
@@ -579,8 +580,11 @@ Checks:
    unverified refs only in `references_unverified[]` and absent from INDEX.
 6. IC/BC expression language parses; aux bindings resolve; `units` tags present; any BC state
    referencing `t` ⇒ `time_dependent_bc == true`.
-7. `reference_results[].key` ∈ `references[]`; provenance-only fields (method/resolution/amr)
-   never appear in the problem block.
+7. `reference_results[].key` (and any `validation_mode.inputs.reference` of `kind: reference`) ∈
+   `references[]`; provenance-only fields (method/resolution/amr) never appear in the problem block.
+   `--offline` ⇒ these keys may instead resolve to `references_unverified[]`, since offline
+   authoring (§5.2B) cannot produce a `verified` ref; the verified-only requirement is enforced
+   online (same downgrade principle as check 10).
 8. `eos` present iff the material's base declares `requires_eos: true`.
 9. `baseline.config_delta` does not change the entry's INDEX capability set (computed from the
    canonical set only).

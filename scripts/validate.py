@@ -188,8 +188,9 @@ def _identifier_present(ref: dict) -> bool:
     return bool(ident.get("doi") or ident.get("arxiv") or ident.get("url"))
 
 
-def check_refs(fm: dict, rep: Report, where: str) -> None:
+def check_refs(fm: dict, rep: Report, where: str, offline: bool = False) -> None:
     verified_keys: set[str] = set()
+    unverified_keys: set[str] = set()
     for ref in fm.get("references") or []:
         if not isinstance(ref, dict):
             rep.err(where, 5, "references[] entry is not a mapping")
@@ -206,14 +207,24 @@ def check_refs(fm: dict, rep: Report, where: str) -> None:
     for ref in fm.get("references_unverified") or []:
         if not isinstance(ref, dict):
             continue
+        unverified_keys.add(ref.get("key"))
         ver = ref.get("verification") or {}
         if ver.get("status") not in ("unverified", "user-supplied"):
             rep.err(where, 5, f"references_unverified[{ref.get('key')}] status must be "
                               f"unverified|user-supplied (got {ver.get('status')!r})")
-    # Check 7: reference_results[].key must be a verified references[] key (SPEC §5.3)
+
+    # Check 7 membership target (SPEC §5.3 / §8.3 check 7): reference_result & mode
+    # `reference` keys must resolve to the VERIFIED references[] list. `--offline`
+    # downgrades this to accept references_unverified[] too, because offline authoring
+    # (§5.2B) cannot produce a `verified` ref — the verified-only requirement is enforced
+    # online. Mirrors check 10's offline downgrade. (SPEC §8.3 check 7 offline clause.)
+    resolvable_keys = verified_keys | unverified_keys if offline else verified_keys
+    scope_word = "references[]/references_unverified[]" if offline else "verified references[]"
+
+    # Check 7: reference_results[].key must resolve (SPEC §5.3)
     for rr in fm.get("reference_results") or []:
-        if isinstance(rr, dict) and rr.get("key") not in verified_keys:
-            rep.err(where, 7, f"reference_results[{rr.get('key')}].key not in verified references[] "
+        if isinstance(rr, dict) and rr.get("key") not in resolvable_keys:
+            rep.err(where, 7, f"reference_results[{rr.get('key')}].key not in {scope_word} "
                               f"(SPEC §5.3)")
     # Check 7: provenance-only keys must not leak into the problem block
     for banned in ("method", "resolution", "amr"):
@@ -233,9 +244,9 @@ def check_refs(fm: dict, rep: Report, where: str) -> None:
                     rep.err(where, 7, f"mode '{m.get('id')}' inputs.reference (reference-result) "
                                       f"key '{key}' has no matching reference_result")
             elif kind == "reference":
-                if key not in verified_keys:
+                if key not in resolvable_keys:
                     rep.err(where, 7, f"mode '{m.get('id')}' inputs.reference key '{key}' "
-                                      f"not in verified references[]")
+                                      f"not in {scope_word}")
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +466,7 @@ def main(argv=None) -> int:
         check_required(fm, rep, where)
         check_registry_ids(fm, reg, rep, where)
         check_scores(fm, rep, where)
-        check_refs(fm, rep, where)
+        check_refs(fm, rep, where, args.offline)
         check_expressions(fm, rep, where)
         check_eos(fm, reg, rep, where)
         check_baseline(fm, rep, where)

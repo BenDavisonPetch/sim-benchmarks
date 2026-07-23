@@ -62,9 +62,14 @@ initial_conditions:
   equilibrium:
     - region: interior
       fields:
-        # Offset dipole is the B IC of the interior material; near-frozen in the low-eta core
-        # because base=magnetic-diffusion with small eta. No prescribed-flux BC needed.
-        B: "dipole(moment_from_surface_eq(195e-9, R_M), center=[0,0,0.2*R_M])"   # gap-C (vocab): dipole builtin
+        # Offset axial dipole is the B IC of the interior material; near-frozen in the low-eta
+        # core because base=magnetic-diffusion with small eta. No prescribed-flux BC needed.
+        # dipole(mx,my,mz, cx,cy,cz): point-dipole B field, moment (mx,my,mz) at center
+        # (cx,cy,cz) — allow-listed builtin (docs/ic-expression-language.md §2.2). The moment
+        # z-component is written INLINE from the surface equatorial field via the standard
+        # relation B_eq = (mu0/4pi) m / R^3  =>  m = B_eq R^3 / (mu0/4pi), with mu0/4pi = 1e-7
+        # (SI); dipole_eq_nT is in nT (x 1e-9 -> T). Center offset +dipole_offset_RM in Z (R_M).
+        B: "dipole(0, 0, dipole_eq_nT * 1e-9 * R_M**3 / 1e-7, 0, 0, dipole_offset_RM)"
   perturbation:
     combine_rule: additive
     fields: []
@@ -145,9 +150,19 @@ validation_modes:
 
 references: []
 references_unverified:
+  # Offline authoring (§5.2B): all refs sit here as unverified until verify_refs.py / /add-refs
+  # (Stage 6, online) resolves each identifier and moves it to references[]. A DOI read off a PDF
+  # is a claim, not proof — jia2015 carries its claimed DOI; the rest have none until checked.
   - key: jia2015
     verification: { status: unverified, identifier: { doi: "10.1002/2015JA021143" }, source: "", checked: null }
-  # anderson2011, winslow2013, hauck2013, slavin2009 -> added by /add-refs; DOIs off the PDF are claims (§5.2B).
+  - key: winslow2013      # empirical magnetopause/bow-shock model (mode reference)
+    verification: { status: unverified, identifier: {}, source: "", checked: null }
+  - key: anderson2011     # MESSENGER offset-dipole strength/offset (source_ref)
+    verification: { status: unverified, identifier: {}, source: "", checked: null }
+  - key: hauck2013        # Mercury interior resistivity/structure (source_ref)
+    verification: { status: unverified, identifier: {}, source: "", checked: null }
+  - key: slavin2009       # MESSENGER upstream IMF (source_ref)
+    verification: { status: unverified, identifier: {}, source: "", checked: null }
 reference_results:
   - key: jia2015
     params_used: { sw_n_cm3: 40, sw_speed_post_kms: 700, sw_n_post_cm3: 80 }
@@ -198,9 +213,12 @@ are method choices, recorded in the reference_result, not in the problem block.
 
 ## GAP LEDGER (pressure-test output)
 Schema gaps from the prior draft are all dissolved by the SPEC delta + coupled-material framing.
-Residual gaps are VOCAB only (self-heal via §7.2, one batched proposal):
-- gap-A: equations/magnetic-diffusion (v==0, induction-only).
-- gap-B: internal-boundary-kinds/electromagnetic-coupling (field continuity, distinct from material-contact).
-- gap-C: dipole builtin + step(t,a,b) helper in the IC-expression allow-list (docs change, logged).
+Vocab/expression gaps are all resolved (Stage 4):
+- gap-A: equations/magnetic-diffusion (v==0, induction-only) — registry id exists (Stage 2).
+- gap-B: internal-boundary-kinds/electromagnetic-coupling (field continuity, distinct from
+  material-contact) — registry id exists (seed).
+- gap-C: `step(t,a,b)` and the `dipole` field builtin are allow-listed
+  (docs/ic-expression-language.md §2, logged SPEC_DEVIATIONS D-001/D-015). The dipole moment is
+  written inline (no problem-specific builtin, no precomputed value).
 
 Needs-source (-> pending_extraction.md): gamma, b_field_convention, and every source_ref value.
