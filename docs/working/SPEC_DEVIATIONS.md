@@ -129,3 +129,37 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
   list fields are always present (grep/reindex never key-misses) while allowing `[]`.
 - Impact: none (a stricter, not looser, reading of §8.3 check 1; §11 unaffected).
 - Status: OPEN
+
+### D-005 [ELAB] `tabulated-eos/` and `geometry-stress/` seeded empty via `.gitkeep`
+- Stage/date: Stage 2, 2026-07-23
+- Spec: §7.1 (registry layout: `tabulated-eos/`, `geometry-stress/` directories)
+- Code: registry/tabulated-eos/.gitkeep, registry/geometry-stress/.gitkeep
+- What: SPEC §7.1 lists both directories; the plan (Stage 2) permits them empty this build
+  ("author named entries only as needed — may stay empty this build — note it, don't force"). Git
+  does not track empty directories, so each is seeded with a `.gitkeep` placeholder (not a registry
+  entry — no frontmatter, no `id`).
+- Why: forced by git's inability to track empty dirs; no real `tabulated-eos`/`geometry-stress` id
+  is referenced by any current entry (incl. the worked example), so none is authored.
+- Impact: none. Stage 3 `validate.py` must glob registry entries as `*.md` (so `.gitkeep` is
+  ignored) — noted for that stage.
+- Status: OPEN
+
+### D-006 [ELAB] Extended machine-readable frontmatter on registry entries
+- Stage/date: Stage 2, 2026-07-23
+- Spec: §7.1 (per-id file `{ id, human name, definition, params-schema, notes, refs }`)
+- Code: registry/{equations,terms,eos,bc-types,coord-systems,internal-boundary-kinds,
+  analysis-treatments,procedures}/*.md
+- What: SPEC §7.1 names a minimal id schema; entries additionally carry structured frontmatter keys
+  beyond `id`/`human_name` — e.g. `kind`, `phase`, `requires_eos`, `velocity`, `evolves`,
+  `interchangeable_with/when` (equations); `param_bearing`, `coefficient`, `applies_to` (terms);
+  `params` (eos); `requires_state`, `physical` (bc-types); `variables`, `axis_singularity`
+  (coord-systems); `formula_ref`, `universal_diagnostic` (procedures). The body keeps the mandated
+  `## Definition / ## Params schema / ## Notes / ## Refs` sections (procedures use the §6.1 section
+  set: Applies to / Inputs / Steps-formula / Output form / Pass-criterion / Refs).
+- Why: the seed solid-phase + `electromagnetic-coupling` files already established extended
+  frontmatter; scripts (Stage 3) consume these as machine-readable aids (e.g. `requires_eos` drives
+  `validate.py` check 8, §8.3). Additive metadata, filterable and diffable.
+- Impact: none (additive; §11.2 registry-id existence and §7.1 body schema unaffected — a superset,
+  not a change).
+- Status: OPEN
+
