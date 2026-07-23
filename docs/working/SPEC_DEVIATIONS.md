@@ -79,4 +79,53 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
 
 ## Entries
 
-(none yet — build not started)
+### D-001 [ELAB] `step(t,a,b)` defined as clamped linear ramp
+- Stage/date: Stage 1, 2026-07-23
+- Spec: §4 ("`step(t, a, b)` (transition helper, defined once in docs)")
+- Code: docs/ic-expression-language.md §2.1
+- What: SPEC names `step(t,a,b)` and mandates it be defined once in docs but gives no formula.
+  Defined as `clip((t-a)/(b-a), 0, 1)`: 0 for t≤a, linear for a<t<b, 1 for t≥b; `a==b` ⇒ Heaviside.
+- Why: spec gap — the formula must exist for `validate.py` to implement it (Stage 3) and for the
+  worked example's driven inflow (`step(t, step_start_s, step_start_s+step_ramp_s)`) to evaluate.
+  Chosen form matches the example's ramp usage.
+- Impact: none. Consistent with §2.3 (step/ramp/sinusoid do not fork; BC-state is a value).
+- Status: OPEN
+
+### D-002 [ELAB] Volume-weighted norm normalization + Linf active-cell rule
+- Stage/date: Stage 1, 2026-07-23
+- Spec: §6.1 (`norms` — "L1/L2/Linf, volume-weighted; ... weighted by active volume fraction
+  (documented once)")
+- Code: docs/procedures.md §1
+- What: SPEC says "volume-weighted" without a formula. Defined normalized norms
+  `L1 = Σw|e|/Σw`, `L2 = sqrt(Σw e²/Σw)`, `Linf = max|e|` over active cells, with weight
+  `w_i = f_i·V_i` (`f_i` = active volume fraction). Normalized (divide by Σw) chosen over
+  unnormalized sums; Linf restricted to `f_i>0` cells.
+- Why: spec gap — the norm formula is what `validate.py` and every procedure encode literally
+  (Stage 3). Normalized form makes norms comparable across resolutions/geometries.
+- Impact: none.
+- Status: OPEN
+
+### D-003 [ELAB] `conservation-drift` absolute/relative drift forms
+- Stage/date: Stage 1, 2026-07-23
+- Spec: §6.1 (`conservation-drift` — "total mass / flux vs time")
+- Code: docs/procedures.md §8
+- What: SPEC names the diagnostic without a drift formula. Defined
+  `drift(t) = |Q(t)−Q(0)|` (absolute) or `|Q(t)−Q(0)|/|Q(0)|` (relative, when Q(0)≠0).
+- Why: spec gap — a concrete measure is needed for the procedure registry file (Stage 2) and
+  `validate.py` (Stage 3).
+- Impact: none.
+- Status: OPEN
+
+### D-004 [ELAB] Frontmatter required-vs-optional classification
+- Stage/date: Stage 1, 2026-07-23
+- Spec: §3.1 (schema example with `[]`/default values), §8.3 check 1 ("all required fields present")
+- Code: docs/spec-schema.md §1
+- What: SPEC §3.1 shows the frontmatter by example but does not enumerate which fields are
+  required. Classified each field R/O for `validate.py` check 1: `references`,
+  `references_unverified`, `reference_results`, `related_to` marked **required-present** (empty list
+  allowed); `eos` conditional on `requires_eos`; `material_fields`, `aux`, `potentials`,
+  `snapshot_times`, `baseline`, `source_ref` optional.
+- Why: spec gap — check 1 ("all required fields present") needs an explicit required set. Chosen so
+  list fields are always present (grep/reindex never key-misses) while allowing `[]`.
+- Impact: none (a stricter, not looser, reading of §8.3 check 1; §11 unaffected).
+- Status: OPEN
