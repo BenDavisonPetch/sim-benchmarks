@@ -1,0 +1,2 @@
+slug	physics_signature	terms	dims	analysis_treatments	bc_types_present	coupling	multi_material	time_dependent_bc	has_internal_boundaries	headline_score	has_exact_solution
+mercury-magnetosphere-coupled-interior	magnetic-diffusion(resistivity)+mhd/gamma-law@electromagnetic-coupling	resistivity	3	none	outflow|supersonic-inflow	electromagnetic-coupling	true	true	true	3	false

@@ -1,0 +1,4 @@
+# Local Python virtual environment (deps installed per-project, never global)
+.venv/
+__pycache__/
+*.pyc

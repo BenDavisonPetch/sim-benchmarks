@@ -163,3 +163,135 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
   not a change).
 - Status: OPEN
 
+### D-007 [ELAB] Expression check is AST-based, not numeric numpy grid evaluation
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §4 ("numpy-evaluable on a coordinate grid; validate.py parses and (aux-)resolves"), §8.3
+  check 6 ("IC/BC expression language parses; aux bindings resolve"), §8.5 (deps `pyyaml`,
+  `bibtexparser`)
+- Code: scripts/speclib.py (`check_expr`, `_ExprWalker`, `FUNCTIONS`)
+- What: `validate.py` check 6 enforces the §4 grammar via Python's stdlib `ast` — parse, allow-list
+  of function names, call arity, permitted operators/nodes, aux top-down ordering (no forward
+  refs), and the `t`-scope rule — rather than numerically evaluating each expression on a numpy
+  grid. numpy is therefore **not** a dependency.
+- Why: §8.5 pins deps to `pyyaml` + `bibtexparser` only; importing numpy (and scipy, for
+  `J0/J1/Jn/erf`) to numerically evaluate would violate §8.5. §8.3 check 6's own wording is
+  "parses; aux bindings resolve" — exactly what the AST checker delivers. `docs/ic-expression-language.md`
+  §7 point 4 phrases the guarantee as "numpy-evaluable on a coordinate grid"; that is delivered
+  **structurally** (grammar + allow-list + arity guarantee an expression *would* evaluate), not by
+  running an evaluation.
+- Impact: none. §11 unaffected; §8.3 check 6 satisfied as written. Doc §7 point 4 wording is
+  marginally stronger than the mechanism; left as-is (structural enforcement) — flag for a future
+  doc softening if a reviewer prefers, not blocking.
+- Status: OPEN
+
+### D-008 [ELAB] `has_internal_boundaries` structural derivation + authored==computed check
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §2.3 (has_internal_boundaries "present iff ≥1 internal boundary/interface"), §8.3 check 6
+  (explicit biconditional given only for `time_dependent_bc`)
+- Code: scripts/speclib.py (`compute_has_internal_boundaries`), scripts/validate.py (`check_expressions`)
+- What: SPEC gives an explicit `t`⇔`time_dependent_bc` check but no mechanical rule for deriving
+  `has_internal_boundaries` from structure. Defined: `true` iff `physics.coupling != none` **or**
+  `internal_boundaries` non-empty **or** `>1` material (two materials must meet at an interface).
+  `validate.py` additionally enforces `capability_flags.has_internal_boundaries == computed`
+  (a check the spec mandates explicitly only for `time_dependent_bc`).
+- Why: spec gap — reindex must compute the flag for INDEX (§8.2), so a deterministic rule is
+  required; enforcing authored==computed prevents a silently inconsistent identity flag (§11.7).
+- Impact: none (a stricter, not looser, consistency check; matches the mercury example
+  coupling+multi-material ⇒ true).
+- Status: OPEN
+
+### D-009 [ELAB] INDEX `physics_signature` serialization; no interchangeable-base collapsing
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §2.1 item 1 (physics_signature = materials{base, term-set, eos} + coupling), §2.4
+  (interchangeable solid-phase bases collapse under a declared predicate), §8.1
+- Code: scripts/speclib.py (`physics_signature`)
+- What: SPEC defines physics_signature conceptually but not a string form. Serialized as
+  `base(term1|term2)[/eostype]` per material (terms sorted), materials sorted, joined by `+`, with
+  `@coupling` appended when coupling != none. Interchangeable-base collapsing (§2.4, e.g.
+  perfect-conductor/rigid-body) is **not** applied in the INDEX signature.
+- Why: a deterministic string is needed for the grep-cheap INDEX candidate query (§2.4 step 1).
+  §2.4/§11 note interchangeability collapsing is a **dedup convention, not a §11 invariant** and
+  requires predicate evaluation ("no coupling field present") — handled by the dedup skill
+  (Stage 5), not the mechanical index.
+- Impact: none (§11 unaffected; dedup step 1 narrows candidates, step 2 does the structural compare).
+- Status: OPEN
+
+### D-010 [ELAB] INDEX `has_exact_solution` column = OR over modes
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §3.1 (`has_exact_solution` is per validation_mode), §8.1 (INDEX has one `has_exact_solution` column)
+- Code: scripts/speclib.py (`has_exact_solution`)
+- What: `has_exact_solution` is per-mode in the schema but a single INDEX column. Defined as the
+  disjunction (true iff **any** mode has an exact solution).
+- Why: §8.1 provides one column; find-test's "exact-solution required?" filter (§9.2) wants "does
+  this entry offer an exact-solution mode at all" — the OR answers that.
+- Impact: none.
+- Status: OPEN
+
+### D-011 [ELAB] `reindex.py` writes INDEX.tsv + single-line headline_score write-back only
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §8.2 (reindex "recomputes headline_score = max(modes) and the capability flags"; §3.1
+  headline_score "set by reindex.py"), §11.4 (INDEX generated), §11.8 (headline = max)
+- Code: scripts/reindex.py (`_rewrite_headline`, `main`); scripts/validate.py (`check_index`)
+- What: `reindex.py` regenerates INDEX.tsv (the derived artifact) and writes the recomputed
+  `headline_score` back into each spec.md via a single-line, comment-preserving regex edit of the
+  frontmatter. It does **not** rewrite the rest of the frontmatter, and does not write the
+  capability flags back into specs. Flags remain authored and are enforced by `validate.py`
+  (`time_dependent_bc` check 6 biconditional; `has_internal_boundaries` per D-008); the INDEX flag
+  values are computed fresh by reindex per §8.2.
+- Why: a full PyYAML round-trip of the frontmatter would destroy authored inline comments — and the
+  worked example (mercury) is heavily commented and is the authoring reference. INDEX still carries
+  reindex-computed flags (§8.2 satisfied for the derived artifact); validate enforces spec-vs-computed
+  consistency, so §11.4/§11.7/§11.8 all hold.
+- Impact: none.
+- Status: OPEN
+
+### D-012 [ELAB] `verify_refs.py` report-only by default; automated write-back deferred
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §5.2A (on success "set status: verified"; "entries move references_unverified[] → references[]"),
+  §8.4
+- Code: scripts/verify_refs.py
+- What: `verify_refs.py` performs the §5.2A static gate (a `verified` ref with no resolvable
+  identifier HARD-FAILS) and, online, live-resolves identifiers and reports RESOLVED/UNRESOLVED,
+  hard-failing an unresolvable `verified` ref. It does **not** mutate spec.md frontmatter to upgrade
+  `references_unverified[] → references[]` by default; a `--write` flag is reserved but not yet
+  implemented.
+- Why: same comment-preservation reason as D-011 — refs are nested multi-key frontmatter entries
+  (per §5.1) and PyYAML round-trip is lossy. Stage 3's goal is "scripts run; --offline works; the
+  verified-without-identifier contradiction hard-fails" — all satisfied. The upgrade write is a
+  skill/manual step (Stage 6 `/add-refs`) or a future `--write`.
+- Why-not-INTERIM: no current stage depends on automated write-back; not a scheduled debt this build.
+- Impact: none (§11.5 no-fabrication + verified⇒identifier gate fully enforced).
+- Status: OPEN
+
+### D-013 [ELAB] INDEX.tsv format details (header row, `dims`, set-cell join, bool spelling)
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §8.1 (column list; "set-valued cells pipe-joined")
+- Code: scripts/speclib.py (`render_index`, `index_row`, `_bool`, `_join_set`)
+- What: choices §8.1 leaves open — a leading TSV **header row** naming the columns; the `dims`
+  column = `dimension.runnable_in` ints pipe-joined; set cells (`terms`, `analysis_treatments`,
+  `bc_types_present`) sorted then `|`-joined (empty set ⇒ empty cell); bools rendered lowercase
+  `true`/`false`; rows sorted by slug. `validate.py` regenerates via the same serializer and diffs
+  byte-for-byte (check 4).
+- Why: §8.1 specifies columns and pipe-joining but not header/ordering/bool spelling; a single
+  serializer shared by reindex + validate guarantees they never disagree.
+- Impact: none.
+- Status: OPEN
+
+### D-014 [ELAB] `parameters` classified required-present; check 7 method-in-prose not scanned
+- Stage/date: Stage 3, 2026-07-23
+- Spec: §3.1 / spec-schema §1.8 (parameters), §8.3 check 7 ("provenance-only fields never appear in
+  the problem block"), D-004 (required-vs-optional classification)
+- Code: scripts/validate.py (`_REQUIRED_PATHS`, `check_refs`)
+- What: (a) D-004 did not classify `parameters`; `validate.py` treats it as **required-present**
+  (empty list allowed), consistent with the schema always showing it. (b) Check 7's "method/
+  resolution/amr never in the problem block" is enforced **structurally** — those keys must not
+  appear at the spec top level (they belong under `reference_results`) plus `reference_results[].key`
+  ∈ `references[]` — but the prose of `## Physical problem` is **not** keyword-scanned for method
+  language (unreliable / false-positive prone).
+- Why: (a) closes a D-004 gap on the stricter side. (b) a reliable mechanical check covers the
+  structural placement; prose method-leakage is an authoring-discipline / review concern, not
+  mechanically decidable.
+- Impact: none for (a) (stricter). (b): §11.1 is enforced for structured fields; prose method
+  leakage is not mechanically caught — a known, accepted limit of check 7.
+- Status: OPEN
+
