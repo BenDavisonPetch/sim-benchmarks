@@ -342,3 +342,42 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
   offline reading of §8.3 check 7, now written into the spec.
 - Status: RESOLVED-Stage4
 
+### D-017 [ELAB] Stage-5 support-skill templates are fill-worksheets, not competing spec scaffolds
+- Stage/date: Stage 5, 2026-07-24
+- Spec: §9.5 (support skills `problem-authoring`, `validation-authoring`, `vocab-extension` each carry
+  `templates/`), §10 (layout names the `templates/` dirs, not their contents), §11.9 (spec.md is one
+  file, template-derived, fixed section order)
+- Code: skills/problem-authoring/templates/problem-block.worksheet.md,
+  skills/validation-authoring/templates/validation-mode.worksheet.md,
+  skills/vocab-extension/templates/proposal.template.md
+- What: SPEC names a `templates/` dir per authoring support skill but not what they hold. Rather than a
+  second full-file `spec.md` scaffold (which would compete with `templates/spec.template.md` and risk
+  divergent section order), each support-skill template is a **fill-aid**: problem-authoring and
+  validation-authoring ship *worksheets* (a checklist of the fields they own + the governing rule per
+  field, transcribed into the single spec.md), and vocab-extension ships a *proposal message* template
+  for the §7.2 hard-stop. The authoritative single-file entry scaffold stays `templates/spec.template.md`.
+- Why: preserve §11.9 (one authoritative scaffold, one fixed section order) while still giving each
+  support skill the copy-and-fill material §9.5 calls for. `dedup` carries no `templates/` per §10.
+- Impact: none. §11.9 preserved (no second entry scaffold); worksheets point back to spec.template.md.
+- Status: OPEN
+
+### D-018 [ELAB] dedup step 1 is a two-pass query (strict duplicate + relaxed sibling)
+- Stage/date: Stage 5, 2026-07-24
+- Spec: §2.4 step 1 (candidate set = same physics_signature AND analysis_treatments AND
+  capability_flags), §2.4 step 3 (NEW-SIBLING decision for same physics_signature but differing
+  treatments/capability_flags), §2.5 (worked cases requiring sibling identification), §12 TODO
+  (related_to auto-linking deferred), D-009 (INDEX signature not interchangeable-collapsed)
+- Code: skills/dedup/SKILL.md (steps 0–1)
+- What: §2.4 step 1 literally filters the candidate set on all three keys, which alone can never feed
+  step 3's NEW-SIBLING branch (a differing capability flag/treatment is excluded from the set). The
+  dedup skill therefore runs step 1 as **two passes**: (1a) strict all-three match → duplicate
+  candidates for the structural compare; (1b) relaxed same-physics_signature, differing in exactly one
+  identity component → siblings for a `related_to` link. 1a also greps interchangeability aliases
+  because D-009 leaves the INDEX signature uncollapsed. related_to linking stays manual this build
+  (§12 TODO not implemented).
+- Why: without 1b the skill returns NEW-ENTRY where §2.5 requires NEW-SIBLING (steady-vs-driven
+  inflow, inviscid-vs-viscous KH, 1D-vs-oblique Sod). Faithful to §2.4 step 3 + §2.5 outcomes.
+- Impact: none to §11 (dedup convention, not a mechanical invariant; §2.4/§11 note identity structural
+  compare is a skill step). Produces the SPEC §2.5 worked-case answers on the seeded INDEX.
+- Status: OPEN
+
