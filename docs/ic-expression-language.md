@@ -82,7 +82,7 @@ All six arguments are **positional scalar expressions** — no keyword arguments
 states (e.g. a surface equatorial field via `m = B_eq R^3 / (mu0/4pi)`); it is **not** a
 precomputed number and **not** a problem-specific helper builtin. The field convention (the `mu0`
 factor / Gaussian vs SI) follows the entry's `units` (SPEC §12, units-as-authored); `validate.py`
-checks the expression structurally (AST), not its numeric value (SPEC_DEVIATIONS D-007).
+checks the expression structurally (AST), not its numeric value (SPEC §8.3 check 6).
 
 ---
 
@@ -165,9 +165,8 @@ function or builtin (e.g. a `dipole` field builtin):
 
 1. Add the name + its definition/signature to §2 of **this file**.
 2. Add it to the allow-list in `scripts/validate.py` with its numpy implementation.
-3. Log the change in `docs/working/SPEC_DEVIATIONS.md` (it is a filled gap / elaboration).
 
-Both edits land in the **same commit**. Never extend the allow-list in `validate.py` without the
-matching entry here, and never reference a name in a spec before it is allow-listed. (The worked
-example's `dipole` builtin was exactly such an extension, landed in Stage 4 — see §2.2 above and
-SPEC_DEVIATIONS D-015.)
+Both edits land in the **same commit** — this is the "logged change" SPEC §4 requires. Never extend
+the allow-list in `validate.py` without the matching entry here, and never reference a name in a spec
+before it is allow-listed. (The worked example's `dipole` builtin was exactly such an extension — see
+§2.2 above.)

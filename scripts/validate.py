@@ -46,9 +46,9 @@ class Report:
 # Check 1 — parse + required fields
 # ---------------------------------------------------------------------------
 
-# Required frontmatter, per docs/spec-schema.md §1 + SPEC_DEVIATIONS D-004.
+# Required frontmatter, per docs/spec-schema.md §1.
 # List fields that must be PRESENT (empty list allowed): references, references_unverified,
-# reference_results, related_to (D-004). `eos` is conditional (check 8).
+# reference_results, related_to. `eos` is conditional (check 8).
 _REQUIRED_PATHS = [
     "slug", "name", "provenance", "one_liner",
     "physics", "physics.materials", "physics.coupling",

@@ -103,9 +103,10 @@ Only after approval:
 1. Write the drafted registry file(s) (and any `docs/procedures.md` / allow-list change) to the repo.
 2. Now the authoring skill may reference the new id in the `spec.md`.
 3. Run `scripts/validate.py` (check 2 confirms every used id now exists) + `scripts/reindex.py`.
-4. Log the extension in `docs/working/SPEC_DEVIATIONS.md` **only** if it also touches code/docs beyond
-   a pure new registry file (a §4-function addition is a logged doc+code change; a plain new registry
-   id that the spec already anticipates is normal vocabulary growth, not a deviation).
+4. A plain new registry id the spec already anticipates is normal vocabulary growth — nothing
+   further. A §4-function addition is the "logged change" SPEC §4 requires: the docs + `validate.py`
+   edit in one commit. A change touching a §11 invariant or a schema *field* is a contract change —
+   re-grill and amend `SPEC.md` (SPEC preamble, §12).
 
 On a schema gap (from step 1): do none of the above — the entry stays un-authored for that field; hand
 the gap ledger to the user for re-grilling.
@@ -116,5 +117,5 @@ the gap ledger to the user for re-grilling.
 
 Every id an entry references either already existed or was drafted, batched into one hard-stop,
 approved, committed, and validated (check 2 clean); no id was referenced before approval; schema gaps
-were escalated (not papered over with an invented field); any §4-function addition is logged in docs +
-code + SPEC_DEVIATIONS.
+were escalated (not papered over with an invented field); any §4-function addition is a logged docs +
+`validate.py` change (SPEC §4).

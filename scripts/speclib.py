@@ -1,8 +1,7 @@
 """speclib — shared machinery for the Numerical Test-Case Database scripts.
 
 Single home for the pieces validate.py / reindex.py / verify_refs.py all need
-(SPEC §8; IMPLEMENTATION_PLAN Stage 3 risk note: "split the parser into a shared
-module"):
+(SPEC §8):
 
   * spec.md frontmatter + body parsing
   * registry loading (ids per kind + the machine-readable frontmatter aids)
@@ -11,8 +10,7 @@ module"):
 
 Pure stdlib + PyYAML. Expressions are checked with Python's `ast` module — grammar,
 allow-list, call arity, aux ordering, and the t-scope rule (SPEC §4 check 6) — not by
-numeric grid evaluation, so numpy is NOT a dependency (SPEC §8.5). See
-docs/working/SPEC_DEVIATIONS.md D-007.
+numeric grid evaluation, so numpy is NOT a dependency (SPEC §8.5, §8.3 check 6).
 """
 
 from __future__ import annotations
@@ -135,8 +133,8 @@ class Registry:
 
 
 def load_registry(repo_root: Path = REPO_ROOT) -> Registry:
-    """Glob registry/<kind>/*.md; ids are filename stems. Non-.md (.gitkeep) ignored
-    (SPEC_DEVIATIONS D-005). Parses equation frontmatter for requires_eos."""
+    """Glob registry/<kind>/*.md; ids are filename stems. Non-.md (.gitkeep) ignored.
+    Parses equation frontmatter for requires_eos."""
     reg = Registry()
     for kind in REGISTRY_KINDS:
         d = repo_root / "registry" / kind
@@ -337,7 +335,7 @@ def compute_has_internal_boundaries(fm: dict) -> bool:
 
     True iff a material interface / internal boundary exists: an explicit
     physics.coupling (≠ none), any internal_boundaries entry, or >1 material (two
-    materials must meet at an interface). See SPEC_DEVIATIONS D-008.
+    materials must meet at an interface).
     """
     coupling = (fm.get("physics") or {}).get("coupling")
     if coupling and coupling != "none":
@@ -379,7 +377,7 @@ def physics_signature(fm: dict) -> str:
     Per material: `base(term1|term2)` (terms sorted) with `/eostype` appended when an
     eos is present; materials sorted; joined by `+`; coupling appended as `@coupling`.
     Interchangeable-base collapsing (SPEC §2.4) is a dedup convention, not applied here
-    (SPEC_DEVIATIONS D-009)."""
+    (SPEC §8.1)."""
     parts = []
     for m in _materials(fm):
         base = m.get("base", "?")
@@ -409,7 +407,7 @@ def bc_types_present(fm: dict) -> set[str]:
 
 def has_exact_solution(fm: dict) -> bool:
     """Entry-level flag for INDEX: true iff any mode has an exact solution
-    (SPEC §3.1 is per-mode; INDEX carries one column — SPEC_DEVIATIONS D-010)."""
+    (SPEC §3.1 is per-mode; INDEX carries one column — SPEC §8.1)."""
     return any(
         bool(m.get("has_exact_solution"))
         for m in (fm.get("validation_modes") or [])

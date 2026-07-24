@@ -218,7 +218,7 @@ Vocab/expression gaps are all resolved (Stage 4):
 - gap-B: internal-boundary-kinds/electromagnetic-coupling (field continuity, distinct from
   material-contact) — registry id exists (seed).
 - gap-C: `step(t,a,b)` and the `dipole` field builtin are allow-listed
-  (docs/ic-expression-language.md §2, logged SPEC_DEVIATIONS D-001/D-015). The dipole moment is
+  (docs/ic-expression-language.md §2). The dipole moment is
   written inline (no problem-specific builtin, no precomputed value).
 
 Needs-source (-> pending_extraction.md): gamma, b_field_convention, and every source_ref value.

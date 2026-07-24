@@ -53,5 +53,5 @@ missing id), list it here for re-grilling. Do NOT invent a field or overload an 
 1. Write the approved registry file(s) / doc+code change to the repo.
 2. Reference the new id(s) in `spec.md`.
 3. Run `scripts/validate.py` (check 2) + `scripts/reindex.py`.
-4. Log in docs/working/SPEC_DEVIATIONS.md if it touched code/docs beyond a plain new registry id
-   (e.g. a §4-function addition).
+4. A §4-function addition is a logged docs + `validate.py` change (SPEC §4), one commit; a plain new
+   registry id needs nothing further.

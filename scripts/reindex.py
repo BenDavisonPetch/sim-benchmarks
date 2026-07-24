@@ -8,7 +8,7 @@ the canonical set of each entry (SPEC §2.3) and writes INDEX.tsv.
 It also writes the recomputed `headline_score` back into each spec.md via a single-line,
 comment-preserving edit of the frontmatter (SPEC §8.2: headline_score "set by
 reindex.py"). It does NOT rewrite the rest of the frontmatter — a full YAML round-trip
-would destroy authored inline comments (SPEC_DEVIATIONS D-011).
+would destroy authored inline comments (SPEC §8.2).
 
     python3 scripts/reindex.py [--check]
 

@@ -16,8 +16,7 @@ a closed form. The specific named table + its provenance/refs live as an id-refe
 ## Notes
 Referenced from a material's `eos.type`. The table id is the identity-bearing element (an entry
 using table A vs table B differs in physics_signature). `registry/tabulated-eos/` is seeded but may
-be empty this build — named tables are authored only as real entries need them (see
-`SPEC_DEVIATIONS` D-005).
+be empty this build — named tables are authored only as real entries need them (SPEC §7.1).
 
 ## Refs
 (none)

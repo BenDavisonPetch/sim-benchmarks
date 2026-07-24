@@ -24,8 +24,8 @@ suite, an ordered suite + a coverage table + explicit holes (Step 4).
 ## The alias table (SPEC §7.3 — slang lives HERE; specs stay canonical)
 
 Specs never store slang. This table is the single place that knows informal names. Rows are
-constructed from the §7.1 `base` semantics (SPEC gives the semantics, not literal rows — logged ELAB
-in `SPEC_DEVIATIONS.md`). A slang term with **no** registry backing (e.g. "Hall MHD", "two-fluid",
+constructed from the §7.1 `base` semantics (SPEC gives the semantics, not literal rows). A slang term
+with **no** registry backing (e.g. "Hall MHD", "two-fluid",
 "radiation MHD") is **not** an alias — it is a **coverage gap** to report in Step 3, never a silent
 match onto the nearest base.
 

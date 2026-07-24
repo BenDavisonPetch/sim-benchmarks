@@ -12,7 +12,7 @@ fabricated — this script is the internet-capable check, not a model judgement.
               static "verified ⇒ identifier present" gate still runs (SPEC §5.2A).
   --write   : opt-in; on successful resolution, upgrade references_unverified -> references
               and stamp verification metadata. OFF by default because writing frontmatter
-              via PyYAML loses authored inline comments (SPEC_DEVIATIONS D-012); default is
+              via PyYAML loses authored inline comments (SPEC §5.2A, §8.4); default is
               report-only + gate.
 
 `resolve_identifier` is imported by validate.py for its check 10.
