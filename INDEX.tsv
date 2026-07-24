@@ -1,2 +1,6 @@
 slug	physics_signature	terms	dims	analysis_treatments	bc_types_present	coupling	multi_material	time_dependent_bc	has_internal_boundaries	headline_score	has_exact_solution
+ideal-mhd-riemann-problem	mhd/gamma-law		1	none	outflow	none	false	false	false	4	false
 mercury-magnetosphere-coupled-interior	magnetic-diffusion(resistivity)+mhd/gamma-law@electromagnetic-coupling	resistivity	3	none	outflow|supersonic-inflow	electromagnetic-coupling	true	true	true	3	false
+permeable-core-thin-shell-diffusion	magnetic-diffusion(resistivity)+magnetostatics+magnetostatics@electromagnetic-coupling	resistivity	2	axis-singularity	dirichlet|periodic	electromagnetic-coupling	true	true	true	5	true
+rotated-sod-embedded-rectangle	hydro/gamma-law		2	oblique-to-grid	outflow	none	false	false	true	5	true
+smooth-mhd-vortex	mhd/gamma-law		2	none	periodic	none	false	false	false	5	true

@@ -381,3 +381,88 @@ ACCEPTED; every INTERIM flipped to RESOLVED.
   compare is a skill step). Produces the SPEC §2.5 worked-case answers on the seeded INDEX.
 - Status: OPEN
 
+### D-019 [ELAB] find-test alias-table rows constructed from §7.1 base-semantics
+- Stage/date: Stage 6, 2026-07-24
+- Spec: §7.3 (aliases resolved by a table inside the /find-test skill), §7.1 (base semantics), §9.2
+- Code: skills/find-test/SKILL.md ("The alias table" section)
+- What: SPEC §7.3 mandates the alias table live in the /find-test skill but supplies **no literal
+  rows**. The rows were constructed from the §7.1 `base` semantics: table (a) physics phrase ->
+  `(base, terms)` (Euler=`hydro`[]; Navier–Stokes=`hydro`[viscosity](+heat-conduction); ideal
+  MHD/MHD=`mhd`[]; resistive MHD=`mhd`[resistivity]; VRMHD=`mhd`[viscosity,resistivity]
+  (+heat-conduction)); table (b) canonical problem-name -> physics family + slug hint (Sod, Brio–Wu,
+  Orszag–Tang, KH, RT+gravity, RM, Sedov/blast, θ-pinch). A slang term with no registry backing
+  (e.g. Hall MHD) is treated as a **coverage gap**, never a silent alias.
+- Why: spec gap — the table is mandatory but its contents are left to the implementation; the §7.1
+  base semantics fix the physics rows deterministically, and §9.2 makes coverage gaps first-class,
+  which fixes the no-backing behaviour.
+- Impact: none (§11 unaffected; find-test is read-only; specs stay canonical, only find-test knows
+  the slang, per §7.3).
+- Status: OPEN
+
+### D-020 [ELAB] `.claude/commands/*.md` thin-wrapper format
+- Stage/date: Stage 6, 2026-07-24
+- Spec: §9 preamble ("commands are thin ... delegate to skills/<n>/SKILL.md"), §10 (layout names the
+  four command files, not their format)
+- Code: .claude/commands/{add-test,find-test,create-test,add-refs}.md
+- What: SPEC §9/§10 mandate four thin command files delegating to the skills but do not specify their
+  format. Chosen (a Claude Code convention): YAML frontmatter with `description` + `argument-hint`; a
+  body that instructs the model to read and follow the relative-linked `../../skills/<n>/SKILL.md`
+  and to treat the user's text (`$ARGUMENTS`) as the skill input. No logic in the wrapper.
+- Why: spec gap — the command-file surface is a harness convention (Claude Code slash commands) the
+  SPEC does not spell out; kept minimal so the skill, not the wrapper, holds all procedure (§9
+  "commands are thin").
+- Impact: none (§11 unaffected; all behaviour lives in the SKILL.md the wrapper points to).
+- Status: OPEN
+
+### D-021 [ELAB] add-test/create-test/add-refs `templates/` are fill-worksheets (extends D-017)
+- Stage/date: Stage 6, 2026-07-24
+- Spec: §9 ("one templates/ dir per authoring skill, copy-and-fill only, no nested logic"), §10
+  (layout names the templates/ dirs, not their contents), §11.9 (spec.md is one file, template-derived)
+- Code: skills/create-test/templates/synthesis.worksheet.md,
+  skills/add-refs/templates/refs-enrichment.worksheet.md,
+  skills/add-test/templates/{enumeration.worksheet.md, subagent-brief.template.md}
+- What: SPEC names a `templates/` dir per command authoring skill but not its contents. Following the
+  D-017 pattern, each is a **fill-aid**, not a second full `spec.md` scaffold: create-test ships a
+  synthesis worksheet (free-text -> identity fields, run dedup before scaffold, derivation-candidate
+  check); add-refs ships a per-ref enrichment worksheet; add-test ships an enumeration worksheet
+  (orchestrator: enumerate/pick/global-defaults/grouping) + a subagent-brief template (global-defaults
+  + per-test slice + the `inherited_from_global[]`/`unresolved_references[]` return contract). The
+  authoritative single-file entry scaffold stays `templates/spec.template.md`.
+- Why: preserve §11.9 (one authoritative scaffold, one fixed section order) while giving each command
+  skill the copy-and-fill material §9 calls for. find-test carries no templates/ per §10.
+- Impact: none. §11.9 preserved (no second entry scaffold); worksheets point back to spec.template.md.
+- Status: OPEN
+
+### D-022 [ELAB] Stage-6 skill harness + `magnetostatics` vocab extension (§7.2, user-approved)
+- Stage/date: Stage 6, 2026-07-24
+- Spec: §9 (Sonnet-executable skills), §7.1/§7.2 (registry + vocabulary extension), §2.1/§2.4 (identity)
+- Code: skills/{find-test,create-test,add-refs,add-test}/, registry/equations/magnetostatics.md,
+  tests/{ideal-mhd-riemann-problem,smooth-mhd-vortex,rotated-sod-embedded-rectangle,
+  permeable-core-thin-shell-diffusion}/
+- What: The four command skills were validated by the Stage-6 harness — one spec-correct baseline
+  (main thread, Opus xhigh, SPEC in context) vs one skill-only executor (Sonnet, in an isolated git
+  worktree, running the real scripts) per command. Deviation from TEMP_STAGE6_PLAN's literal "one Opus
+  agent + one Sonnet agent both in worktrees": the Opus baseline was produced inline by the main thread
+  rather than as a redundant spawned agent (cheaper; and, holding the SPEC, a more authoritative ground
+  truth for the "did the skill alone reach the spec-correct decision" test). All five pairs
+  (find-test, add-refs offline, create-test, add-test NORMAL, add-test APPLICATION) matched their
+  baseline on every decision-critical field — no skill under-prescription, no SPEC ambiguity
+  (no SPEC-UPDATE-NEEDED). Notable confirmations: intra-paper dedup correctly collapsed the four
+  ideal-MHD Riemann problems (Brio-Wu / Ryu-Jones / RP3 / RP4) into ONE entry with four
+  reference_result presets (value-blind identity, §2.1 item 3 / §2.2); triage correctly routed the
+  self-contained textbook source NORMAL (the plan's "APPLICATION" label was a mis-expectation, not a
+  skill defect); no fabricated refs/parameters anywhere; offline discipline held.
+  The add-test APPLICATION run triggered a genuine §7.2 vocab hard-stop. Resolution (user-approved):
+  ONE new equation id `magnetostatics` (insulating linear magnetic medium, elliptic `B=μH`, `v≡0`,
+  `requires_eos:false`, `evolves:[]`); the proposed `internal-boundary-kinds/resistive-current-sheet`
+  was REJECTED — per the user's physics direction and triage.md A2.5, the thin conducting wall is a
+  `magnetic-diffusion` **material** (finite resistivity), and the interfaces use the existing
+  `electromagnetic-coupling` kind. The permeable-core entry was re-authored as a 3-material system
+  (`magnetic-diffusion(resistivity)+magnetostatics+magnetostatics@electromagnetic-coupling`).
+- Why: §9 mandates Sonnet-executable skills; the harness is the evidence. `magnetostatics` fills a
+  real gap (no existing base carries a permeability `μ≠μ0`); admitting it via §7.2 is the sanctioned
+  growth mechanism, not a spec deviation.
+- Impact: none to §11. §11.2 (registry-backed enums) satisfied — `magnetostatics` is a proper new
+  registry id; §11.7 (structural identity) satisfied — the 3-material signature is honest.
+- Status: ACCEPTED (user approved `magnetostatics`, rejected `resistive-current-sheet`, 2026-07-24)
+
