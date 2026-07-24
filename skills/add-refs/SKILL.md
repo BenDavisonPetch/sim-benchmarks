@@ -66,6 +66,17 @@ check 7 / D-016):
 Never inflate or paraphrase a number. If the ref states "L1 converges at order 1.97", write `1.97`,
 not "~2" and not "second order".
 
+**Fetch discipline (cost gate).** Extract findings from the **abstract + the results / convergence
+tables + the figure captions** for this test — do **not** pull the full PDF into context. Fetch the
+full text only when a specific number you must record is absent from those sections. Pulling whole
+papers is the dominant token cost of this skill and is almost never needed for `findings`.
+
+**Verified-but-unreadable ref (deadlock escape).** A ref whose identifier resolves (so it is legitimately
+`verified`) but whose text is genuinely inaccessible (paywalled + no free/arXiv copy) gets **no**
+`reference_result` — leave it out and add a one-line YAML comment saying why. Never type
+findings/method/resolution from a secondary summary or memory to satisfy "Done when" — the
+no-fabrication contract wins over completeness.
+
 ---
 
 ## Step 2. Resolve original_intro (SPEC §5.4 — by RULE, never guessed)
@@ -78,6 +89,12 @@ not "~2" and not "second order".
 - Every other using ref is `original_intro: false`.
 - **Never guess beyond this rule.** If you cannot order the refs by date (e.g. all unverified
   offline), leave `unknown` and note it — do not invent a priority.
+- **Dedup-folded multi-preset entries** (several presets folded to one entry, per the top-of-file
+  dedup comment): "this test" means the **fold-level** test, so the single earliest verified using-ref
+  across all folded presets is `true`. Do not set `original_intro` per-preset.
+- **Date a ref by its actual publication, not its citekey year.** A citekey embedding a wrong year
+  (e.g. an arXiv-era preprint keyed to its arXiv-fetch year) does not change the ordering — use the
+  real publication date recorded during verification.
 
 ---
 
@@ -92,10 +109,19 @@ each ref found and *how* it validates the test.
 
 ## Step 4. Verify — online run verify_refs.py; offline emit pending_verification.md (SPEC §5.2)
 
-- **Online:** run `.venv/bin/python scripts/verify_refs.py`. On success it resolves identifiers and
-  the ref may move `references_unverified[] -> references[]` with `verification.status: verified` +
-  `source` + `checked`. A `verified` ref with no resolvable identifier **hard-fails** — fix or
+- **Online:** run `.venv/bin/python scripts/verify_refs.py`. The script is **report-only** — its
+  `--write` upgrade is deliberately not implemented (PyYAML would strip the authored inline comments,
+  D-012). So it prints `RESOLVED`/`UNRESOLVED` per identifier but does **not** move anything: **you
+  hand-edit** the frontmatter to move each `RESOLVED` ref `references_unverified[] -> references[]`
+  and stamp `verification.status: verified` + `source` (what resolved it) + `checked` (date). Re-run
+  the script after editing; a `verified` ref that prints `UNRESOLVED` **hard-fails** — fix or
   downgrade it, never fake an identifier.
+- **Valid-but-bot-blocked identifier.** Some publishers (e.g. Wiley) return HTTP 403 to the script's
+  non-browser requests even for a valid DOI. If the identifier is corroborated (title/authors match a
+  retrieved source such as the arXiv abstract page), record a **resolvable** identifier — prefer the
+  arXiv id, which resolves 200 — as the `verified` identifier and note the blocked DOI in `source`.
+  Do **not** hard-fail or fabricate; do **not** stamp `verified` on an identifier that resolves
+  nowhere.
 - **Offline:** record every candidate ref as `status: unverified` in `references_unverified[]` with
   its claimed identifier extracted **verbatim** from the source (a claim, not proof). Emit
   `tests/<slug>/pending_verification.md` from `templates/pending_verification.template.md` (top-level):
@@ -130,7 +156,9 @@ any failure before finishing.
 ## Done when
 
 Every verified ref has a `reference_result` with `method`/`resolution`/`amr` (provenance-only, never in
-the problem block) and quantitative `findings` **verbatim with units**; `original_intro` set by the
+the problem block) and quantitative `findings` **verbatim with units** — **except** a
+verified-but-unreadable ref, which correctly carries no `reference_result` plus a comment saying why;
+`original_intro` set by the
 §5.4 rule (or left `unknown` with a note, never guessed); no "compares with literature" anywhere;
 online `verify_refs.py` ran (offline emitted `pending_verification.md` and zero `verified` entries);
 every retrievable `pending_extraction.md` row was written back with a `source_ref` (unretrievable rows
