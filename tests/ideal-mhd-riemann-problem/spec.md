@@ -116,47 +116,139 @@ validation_modes:
     score: 3
     score_justification: "Quantitative reference profile exists (paper's own high-resolution MUSCL/HLLC run) but comparison as reported is visual, not a stated numeric norm; tops at 3 (rubric)."
 
-references: []
-references_unverified:
-  - key: dematte2024
-    verification: { status: unverified, identifier: { doi: "10.1016/j.jcp.2024.113229" }, source: "", checked: null }
+references:
   - key: brio1988
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    original_intro: true
+    verification: { status: verified, identifier: { doi: "10.1016/0021-9991(88)90120-9" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 200); identifier corroborated by ADS, dl.acm.org, ScienceDirect listings (WebSearch); full text paywalled, no free copy found (ScienceDirect abstract page returns HTTP 403; no arXiv preprint exists pre-dating arXiv) -- identifier is verified, no reference_result recorded (SPEC 5.2 no-fabrication: cannot report findings not read)", checked: "2026-07-24" }
   - key: ryujones1995
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    original_intro: false
+    verification: { status: verified, identifier: { doi: "10.1086/175437", arxiv: "astro-ph/9404074" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 202); full text retrieved via arXiv preprint astro-ph/9404074 (identical title/authors/journal ref to ApJ 442, 228 confirmed on the arXiv abstract page)", checked: "2026-07-24" }
   - key: dumbser2024vrmhd
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    original_intro: false
+    verification: { status: verified, identifier: { arxiv: "1801.06592" }, source: "verify_refs.py live HTTP resolution (arxiv.org -> HTTP 200); full text retrieved via the arXiv preprint. NOTE: published version is Dumbser, Balsara, Tavelli & Fambri, Int. J. Numer. Methods Fluids 89 (2019) 16-42, doi:10.1002/fld.4681 -- actual publication year 2019, not 2024 as the citekey suggests; DOI resolution via doi.org returned HTTP 403 (Wiley blocks scripted HEAD/GET in this environment) so the arXiv id is used as the resolvable identifier instead", checked: "2026-07-24" }
   - key: fambri2023
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
-reference_results:
+    original_intro: false
+    verification: { status: verified, identifier: { arxiv: "2012.11218" }, source: "verify_refs.py live HTTP resolution (arxiv.org -> HTTP 200); full text retrieved via the arXiv preprint. NOTE: published version is Fambri, Int. J. Numer. Methods Fluids 93(12) (2021) 3447-3489, doi:10.1002/fld.5041 -- actual publication year 2021, not 2023 as the citekey suggests; DOI resolution via doi.org returned HTTP 403 (Wiley blocks scripted HEAD/GET in this environment) so the arXiv id is used as the resolvable identifier instead", checked: "2026-07-24" }
   - key: dematte2024
-    params_used: { preset: "RP1 (Brio-Wu)", x0: 0.5, rho_L: 1.0, rho_R: 0.125, Bx: 0.75, By_L: 1.0, By_R: -1.0, p_L: 1.0, p_R: 0.1, t_final: 0.1 }
-    method: "proposed semi-implicit FVS scheme (Rusanov advective flux, nested-Picard implicit pressure sub-system); staggered CT for div-B; MUSCL-Hancock TVD 2nd-order reconstruction"
+    original_intro: false
+    verification: { status: verified, identifier: { doi: "10.1016/j.jcp.2024.113229" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 200); full text retrieved via the Cambridge institutional repository accepted manuscript (open access)", checked: "2026-07-24" }
+references_unverified: []
+reference_results:
+  # brio1988 intentionally has NO reference_result: its identifier is verified (DOI resolves,
+  # corroborated by ADS/dl.acm.org/ScienceDirect listings) but the paper's own full text is
+  # paywalled with no free copy locatable (ScienceDirect returns HTTP 403; JCP 1988 predates
+  # arXiv). Per the no-fabrication contract (SPEC 5.2), findings/method/resolution are recorded
+  # only when actually read from the source, never typed from secondary summaries or memory.
+  - key: ryujones1995
+    params_used: { preset: "RP2 origin ('test 2a', seven-wave shock tube)", x0: 0.5, rho_L: 1.08, rho_R: 1.0, vx_L: 1.2, vx_R: 0.0, vy_L: 0.01, vy_R: 0.0, vz_L: 0.5, vz_R: 0.0, Bx: 0.564190, By_L: 1.015541, By_R: 1.128379, Bz_L: 0.564190, Bz_R: 0.564190, p_L: 0.95, p_R: 1.0, t_final: 0.2 }
+    method: "second-order-accurate explicit finite-difference Total Variation Diminishing (TVD) scheme (Harten 1983), a Roe-type upwind linearization with simple (non-analytic) cell-boundary averaging; compared against the authors' own nonlinear MHD Riemann solver, which treats fast/slow rarefactions exactly rather than as rarefaction shocks"
+    resolution: "512 cells on x in [0,1]"
+    amr: "none"
+    findings: >
+      Fig. 2a (this test, their "test 2a"): fast shocks, rotational discontinuities and slow shocks
+      propagate from each side of the contact discontinuity. Strong fast shocks are resolved within
+      2-4 cells while weak slow shocks require more cells. With the rotational-discontinuity
+      steepening of Sect. 2.3, rotational discontinuities spread over only 3-5 cells (6-8 cells
+      without steepening); the contact discontinuity spreads over more cells (steepening the contact
+      discontinuity was found to generate numerical oscillations, so it is not applied). Courant
+      constant 0.8 used. NOTE: the right state used in this ref is rho_R=1.0, By_R=4/sqrt(4*pi),
+      p_R=1.0 (a clean equilibrium state); this differs from the RP2 preset canonical to this entry
+      (rho_R=0.9891, By_R=1.135262, p_R=0.97159), which is inherited from dematte2024's Table 1 and
+      is itself inherited from a modified right state used by dumbser2024vrmhd and fambri2023 -- both
+      of whom nonetheless attribute the RP2 concept to this paper.
+  - key: dumbser2024vrmhd
+    params_used: { preset: "RP1 (Brio-Wu)", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.125, p_L: 1.0, p_R: 0.1, t_final: 0.1, CFL: 0.9 }
+    method: "semi-implicit finite volume (SIFV) scheme; convective subsystem discretized explicitly with a second-order MUSCL-type TVD reconstruction, pressure subsystem treated implicitly; compared to an exact MHD Riemann solver (courtesy S.A.E.G. Falle)"
+    resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
+    amr: "none"
+    findings: >
+      All standard finite volume schemes, including this one, produce a compound wave instead of the
+      wave pattern suggested by the exact Riemann solver in the density profile; only Glimm's random
+      choice method reproduces the correct solution (per Falle). Numerical results are in line with
+      others published in the literature despite the density-profile disagreement; the magnetic
+      field component By agrees well with the exact solution.
+  - key: dumbser2024vrmhd
+    params_used: { preset: "RP2 (Ryu-Jones seven-wave, modified right state)", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.08, rho_R: 0.9891, p_L: 0.95, p_R: 0.97159, t_final: 0.2, CFL: 0.9 }
+    method: "same as RP1 entry above"
+    resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
+    amr: "none"
+    findings: "Wave pattern composed of discontinuities in all seven MHD waves; agreement between the numerical and exact solution is \"very good\"."
+  - key: dumbser2024vrmhd
+    params_used: { preset: "RP3", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.7, rho_R: 0.2, p_L: 1.7, p_R: 0.2, t_final: 0.15, CFL: 0.9 }
+    method: "same as RP1 entry above"
+    resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
+    amr: "none"
+    findings: "Also contains seven waves, but compared to RP2 the two left waves are rarefactions rather than shocks; the scheme captures the wave pattern properly apart from the weak right-moving shock."
+  - key: dumbser2024vrmhd
+    params_used: { preset: "RP4", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.4, p_L: 1.0, p_R: 0.4, t_final: 0.16, CFL: 0.9 }
+    method: "same as RP1 entry above"
+    resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
+    amr: "none"
+    findings: "The scheme has some difficulty capturing the second wave from the left at the given grid resolution (1000 cells), behaviour the authors state is similar to that observed in two other published works; the By profile is well reproduced."
+  - key: fambri2023
+    params_used: { preset: "RP1 (Brio-Wu)", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.125, p_L: 1.0, p_R: 0.1, t_final: 0.1, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
+    method: "structure-preserving semi-implicit finite volume method for viscous/resistive MHD; convective subsystem explicit (second-order MUSCL-type), pressure/magnetic subsystem implicit with stiffening parameters theta_p, theta_B; mesh resolution dx=1e-3; compared to an exact MHD Riemann solver (courtesy S.A.E.G. Falle)"
+    resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
+    amr: "none"
+    findings: >
+      Computed solution shown to be in good agreement with other published works. When a
+      convective-and-Alfvenic Courant number dt=dt(lambda_vB) is used, results fit very well those
+      of a compared reference; using a purely convective Courant number dt=dt(lambda_v) instead
+      yields a gain of 2-5x in Courant number, at the cost of numerical diffusion from lower
+      time-accuracy and slightly more oscillatory behaviour from unresolved time-scales.
+  - key: fambri2023
+    params_used: { preset: "RP2 (Ryu-Jones seven-wave, modified right state)", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.08, rho_R: 0.9891, p_L: 0.95, p_R: 0.97159, t_final: 0.2, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
+    method: "same as RP1 entry above"
+    resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
+    amr: "none"
+    findings: "Same Courant-number-choice trade-off reported jointly for RP1-RP4 (see RP1 entry above): 2-5x gain in Courant number at the cost of accuracy when using a purely convective time step."
+  - key: fambri2023
+    params_used: { preset: "RP3", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.7, rho_R: 0.2, p_L: 1.7, p_R: 0.2, t_final: 0.15, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
+    method: "same as RP1 entry above"
+    resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
+    amr: "none"
+    findings: "Same Courant-number-choice trade-off reported jointly for RP1-RP4 (see RP1 entry above): 2-5x gain in Courant number at the cost of accuracy when using a purely convective time step."
+  - key: fambri2023
+    params_used: { preset: "RP4", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.4, p_L: 1.0, p_R: 0.4, t_final: 0.16, CFL: 0.9, theta_p: 1.0, theta_B: 0.65 }
+    method: "same as RP1 entry above"
+    resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
+    amr: "none"
+    findings: "Same Courant-number-choice trade-off reported jointly for RP1-RP4 (see RP1 entry above): 2-5x gain in Courant number at the cost of accuracy when using a purely convective time step. Stiffening parameter theta_B raised to 0.65 for this preset (vs. 0.55 for RP1-RP3)."
+  - key: dematte2024
+    params_used: { preset: "RP1 (Brio-Wu)", x0: 0.5, rho_L: 1.0, rho_R: 0.125, Bx: 0.75, By_L: 1.0, By_R: -1.0, p_L: 1.0, p_R: 0.1, t_final: 0.1, CFL: 0.8 }
+    method: "proposed semi-implicit FVS scheme (Rusanov advective flux, nested-Picard implicit pressure sub-system); staggered CT for div-B; second-order-accurate MUSCL-Hancock-type TVD reconstruction for the advective sub-system"
     resolution: "1000 cells on [0,1]"
     amr: "none"
     findings: >
-      Good agreement with a high-resolution reference (2nd-order MUSCL-type TVD scheme with the
-      HLLC Riemann solver), for both a purely-advective and an Alfvenic time step; artificial
-      compound wave in the density profile is present, consistent with standard finite-volume MHD
-      schemes in the literature.
+      "An artificial compound wave in the density profile" is present, "a common feature of standard
+      finite volume schemes for ideal MHD"; results are "in line with others published in the
+      literature" (citing Brio & Wu, Dumbser & Toro, Falle & Komissarov, Dumbser et al., and Fambri).
+      Good agreement with a high-resolution reference solution (their own explicit density-based
+      second-order MUSCL-type TVD scheme with an HLLC Riemann solver) is shown for both a purely
+      advective time step and an Alfvenic time step.
   - key: dematte2024
-    params_used: { preset: "RP2 (Ryu-Jones seven-wave)", x0: 0.5, rho_L: 1.08, rho_R: 0.9891, vx_L: 1.2, vx_R: -0.0131, vy_L: 0.01, vy_R: 0.0269, vz_L: 0.5, vz_R: 0.010037, Bx: 0.564190, By_L: 1.015541, By_R: 1.135262, Bz_L: 0.564190, Bz_R: 0.564923, p_L: 0.95, p_R: 0.97159, t_final: 0.2 }
+    params_used: { preset: "RP2 (Ryu-Jones seven-wave)", x0: 0.5, rho_L: 1.08, rho_R: 0.9891, vx_L: 1.2, vx_R: -0.0131, vy_L: 0.01, vy_R: 0.0269, vz_L: 0.5, vz_R: 0.010037, Bx: 0.564190, By_L: 1.015541, By_R: 1.135262, Bz_L: 0.564190, Bz_R: 0.564923, p_L: 0.95, p_R: 0.97159, t_final: 0.2, CFL: 0.8 }
     method: "same as RP1 entry above"
     resolution: "1000 cells on [0,1]"
     amr: "none"
-    findings: "Good agreement with high-resolution reference; wave pattern correctly reproduced."
+    findings: "Scheme reproduces the wave pattern properly; good agreement with the high-resolution reference solution described in the RP1 entry above."
   - key: dematte2024
-    params_used: { preset: "RP3", x0: 0.5, rho_L: 1.7, rho_R: 0.2, vz_R: -1.496891, Bx: 1.1, By_L: 1.0, By_R: 0.785887, Bz_R: 0.618370, p_L: 1.7, p_R: 0.2, t_final: 0.15 }
+    params_used: { preset: "RP3", x0: 0.5, rho_L: 1.7, rho_R: 0.2, vz_R: -1.496891, Bx: 1.1, By_L: 1.0, By_R: 0.785887, Bz_R: 0.618370, p_L: 1.7, p_R: 0.2, t_final: 0.15, CFL: 0.8 }
     method: "same as RP1 entry above"
     resolution: "1000 cells on [0,1]"
     amr: "none"
-    findings: "Purely-advective dt less accurate than Alfvenic dt due to lower time resolution; re-run at multiple CFL numbers (Fig. 3) shows accuracy improves as CFL (and dt) decreases."
+    findings: >
+      Choice of a purely-advective dt-a produces less accurate results than the Alfvenic dt-alv, "due
+      to the lower resolution in time which leads to unresolved time-scales of the flow." Re-run with
+      a purely-advective dt-a at different CFL numbers (Fig. 3): "reducing the CFL number ... there is
+      a slight increase in the accuracy of the numerical solution, attributed to the improved
+      resolution of the flow's time-scales."
   - key: dematte2024
-    params_used: { preset: "RP4", x0: 0.4, rho_L: 1.0, rho_R: 0.4, Bx: 1.3, By_L: 1.0, By_R: -1.0, p_L: 1.0, p_R: 0.4, t_final: 0.16 }
+    params_used: { preset: "RP4", x0: 0.4, rho_L: 1.0, rho_R: 0.4, Bx: 1.3, By_L: 1.0, By_R: -1.0, p_L: 1.0, p_R: 0.4, t_final: 0.16, CFL: 0.8 }
     method: "same as RP1 entry above"
     resolution: "1000 cells on [0,1]"
     amr: "none"
-    findings: "Purely-advective dt less accurate than Alfvenic dt (same effect as RP3); re-run at multiple CFL numbers (Fig. 3)."
+    findings: "Same purely-advective-vs-Alfvenic dt accuracy trade-off as RP3 (see RP3 entry above); re-run at multiple CFL numbers (Fig. 3) with the same qualitative trend."
 related_to: []
 headline_score: 4
 ---
@@ -180,13 +272,50 @@ structures at their respective states (see reference_results for each preset's f
 
 ## Validation notes
 RH-jump conditions provide a resolution-independent, analytic check across all four presets.
-The paper's own comparison (Fig. 2/3) is against a high-resolution reference solution (its own
-explicit HLLC run), not an exact solution — this caps the reference-comparison mode at score 3,
-while the RH-jump mode (analytic conditions) reaches score 4.
+`dematte2024`'s own comparison (Fig. 2/3, 1000 cells on [0,1]) is against a high-resolution
+reference solution (their own explicit density-based 2nd-order MUSCL-type TVD/HLLC run), not an
+exact solution — this caps the `profile-vs-high-res-reference` mode at score 3, while the
+`rh-jump-shocks` mode (analytic conditions) reaches score 4.
+
+RP1 (Brio-Wu) is originally due to `brio1988` (identifier verified; full text inaccessible, so no
+`reference_result` is recorded for it — see Notes). `ryujones1995` originated RP2 as their "test 2a"
+(seven-wave shock tube, 512 cells on [0,1], Courant constant 0.8): they report strong fast shocks
+resolved within 2-4 cells, rotational discontinuities within 3-5 cells with steepening (6-8 cells
+without), and the contact discontinuity spread over more cells than that. `dumbser2024vrmhd`
+(1000 control volumes on [-0.5,0.5], CFL 0.9) and `fambri2023` (dx=1e-3 on [-0.5,0.5], CFL 0.9,
+theta_B=0.55 for RP1-3 / 0.65 for RP4) both run all four RP1-4 presets with their own
+semi-implicit schemes: for RP1 they report the same artificial compound wave as `dematte2024` and
+attribute the correct (non-compound) solution only to Glimm's random choice method; for RP3
+`dumbser2024vrmhd` reports the wave pattern is captured "properly apart from the weak
+right-moving shock"; for RP4 they report difficulty "capturing the second wave from the left at
+the given grid resolution"; `fambri2023` reports a purely-convective time step yields a 2-5x gain
+in Courant number at the cost of numerical diffusion and mild time-scale-related oscillation,
+mirroring `dematte2024`'s own purely-advective-vs-Alfvenic dt finding for RP3/RP4.
 
 ## Notes
-domain_bc type (outflow) is an inferred convention, not explicitly stated for this subsection —
-see pending_extraction.md. Bx is uniform across the discontinuity in every preset (required for
-div-B compatibility of a 1D normal field). Units are stored as authored (bare, nondimensional
-numbers); b_field_convention (permeability-unity) IS stated in the source (Sect. 2), so is not a
-needs-source item.
+domain_bc type (outflow) remains an inferred convention: it is not stated in `dematte2024` Sect.
+4.1.1, and the retrievable primary source (`ryujones1995`, full text checked via its arXiv
+preprint) states no boundary-condition convention anywhere for its 1D shock-tube tests either
+(only "boundary" usage found concerns the internal Riemann discontinuity, not the domain edges).
+`brio1988` could not be checked (its JCP 1988 paper is paywalled with no free copy locatable); see
+`pending_extraction.md`, left open pending that check. Bx is uniform across the discontinuity in
+every preset (required for div-B compatibility of a 1D normal field). Units are stored as
+authored (bare, nondimensional numbers); b_field_convention (permeability-unity) IS stated in the
+source (Sect. 2), so is not a needs-source item.
+
+`brio1988` (DOI 10.1016/0021-9991(88)90120-9) is `verified` (identifier live-resolved via
+verify_refs.py) but carries no `reference_result`: ScienceDirect returns HTTP 403 to automated
+fetches and no free copy of the 1988 paper (pre-arXiv) could be located, so no findings/method/
+resolution could be read from the primary source itself (SPEC 5.2 no-fabrication contract).
+
+`dumbser2024vrmhd` and `fambri2023` are citekeys carried over unmodified from the offline-authored
+`pending_verification.md`; their actual publication years are 2019 (Int. J. Numer. Methods Fluids
+89, 16-42, doi:10.1002/fld.4681) and 2021 (Int. J. Numer. Methods Fluids 93(12), 3447-3489,
+doi:10.1002/fld.5041) respectively, not 2024/2023 as the keys suggest. Both DOIs are correct and
+match the titles given in `pending_verification.md`, but `doi.org` returns HTTP 403 to this
+script's automated HEAD/GET in this environment (Wiley appears to block non-browser requests); the
+arXiv preprint identifiers (1801.06592, 2012.11218) were used instead as the `verified` identifier
+since they resolve live over HTTP 200. Both papers' RP1-RP4 initial states are expressed in
+un-normalized Gaussian-type units (a factor of sqrt(4*pi) larger in B) and on domain [-0.5,0.5]
+(vs. this entry's [0,1], permeability-unity convention) — same physical states, different
+convention, consistent with the b_field_convention note above.
