@@ -156,13 +156,13 @@ references_unverified:
   - key: jia2015
     verification: { status: unverified, identifier: { doi: "10.1002/2015JA021143" }, source: "", checked: null }
   - key: winslow2013      # empirical magnetopause/bow-shock model (mode reference)
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { doi: "10.1002/jgra.50237" }, source: "", checked: null }
   - key: anderson2011     # MESSENGER offset-dipole strength/offset (source_ref)
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { doi: "10.1126/science.1211001" }, source: "", checked: null }
   - key: hauck2013        # Mercury interior resistivity/structure (source_ref)
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { doi: "10.1002/jgre.20091" }, source: "", checked: null }
   - key: slavin2009       # MESSENGER upstream IMF (source_ref)
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { doi: "10.1029/2008GL036158" }, source: "", checked: null }
 reference_results:
   - key: jia2015
     params_used: { sw_n_cm3: 40, sw_speed_post_kms: 700, sw_n_post_cm3: 80 }

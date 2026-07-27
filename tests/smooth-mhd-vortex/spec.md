@@ -124,9 +124,9 @@ references_unverified:
   - key: dematte2024
     verification: { status: unverified, identifier: { doi: "10.1016/j.jcp.2024.113229" }, source: "", checked: null }
   - key: dumbser2024vrmhd
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { arxiv: "1801.06592" }, source: "", checked: null }
   - key: fambri2023
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { arxiv: "2012.11218" }, source: "", checked: null }
 reference_results:
   - key: dematte2024
     params_used: { mode: "convergence study (4.1.2)", domain: "[0,10]x[0,10] periodic, centred at (5,5)", t_final: 1.0 }

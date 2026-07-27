@@ -135,7 +135,7 @@ references: []
 references_unverified:
   # Offline authoring (SPEC §5.2B): unverified until /add-refs (Stage 6, online) resolves it.
   - key: toro2009
-    verification: { status: unverified, identifier: {}, source: "", checked: null }
+    verification: { status: unverified, identifier: { doi: "10.1007/b79761" }, source: "", checked: null }
 reference_results: []
 related_to: []
 headline_score: 5
