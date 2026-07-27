@@ -155,13 +155,22 @@ validation_modes:
     score: 5
     score_justification: "Exact solution + demonstrated convergence to the theoretical order is the compound criterion for score 5 (scoring-rubric.md row 5)."
 
-references: []
-references_unverified:
-  # Offline authoring (§5.2B): source is a specific web page (URL read directly from the saved
-  # HTML's `saved from url=` comment); no DOI. Author/year/publisher NOT asserted here -- that would
-  # be a memory-fabricated bibliographic claim, not something read from the supplied file.
+references:
   - key: mit6013-ch10-4
-    verification: { status: unverified, identifier: { url: "https://web.mit.edu/6.013_book/www/chapter10/10.4.html" }, source: "saved-page comment in permeable_shell_ref.html", checked: null }
+    original_intro: true            # §5.4 rule 2a — see test_origin; url-only, so no resolver `meta`
+    verification:
+      status: verified
+      identifier: { url: "https://web.mit.edu/6.013_book/www/chapter10/10.4.html" }
+      source: "url-head: https://web.mit.edu/6.013_book/www/chapter10/10.4.html -> HTTP 200"
+      checked: "2026-07-27"
+      # No `meta`: a bare URL carries no bibliographic record, and the resolver returns none for it.
+      # Author/year/publisher are deliberately NOT asserted here — that would be a memory-fabricated
+      # bibliographic claim (§5.2), which is exactly what `meta` exists to prevent.
+references_unverified: []
+test_origin:
+  status: resolved-in-list
+  ref: mit6013-ch10-4
+  authored_from: mit6013-ch10-4     # the entry was read from this page, which is also the origin
 reference_results: []
 related_to: []
 headline_score: 5

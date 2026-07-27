@@ -148,21 +148,69 @@ validation_modes:
     score: 3
     score_justification: "Controlled quantitative A/B (the difference is the measurand); tops at 3 absent an exact solution."
 
-references: []
-references_unverified:
-  # Offline authoring (§5.2B): all refs sit here as unverified until verify_refs.py / /add-refs
-  # (Stage 6, online) resolves each identifier and moves it to references[]. A DOI read off a PDF
-  # is a claim, not proof — jia2015 carries its claimed DOI; the rest have none until checked.
+references:
+  # All 5 DOIs resolve on the Crossref metadata API (§8.4). `meta` is resolver output, never typed.
   - key: jia2015
-    verification: { status: unverified, identifier: { doi: "10.1002/2015JA021143" }, source: "", checked: null }
-  - key: winslow2013      # empirical magnetopause/bow-shock model (mode reference)
-    verification: { status: unverified, identifier: { doi: "10.1002/jgra.50237" }, source: "", checked: null }
+    original_intro: true            # sole using-ref; SPEC §5.4 rule 3 (see test_origin below)
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/2015JA021143" }
+      source: "crossref: 10.1002/2015JA021143 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2015
+        first_author: Jia
+        container: "Journal of Geophysical Research: Space Physics"
+        title: "Global MHD simulations of Mercury's magnetosphere with coupled planetary interior: Induction effect of the planetary conducting core on the global interaction"
+  - key: winslow2013      # empirical magnetopause/bow-shock model (mode reference, NOT a using-ref)
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/jgra.50237" }
+      source: "crossref: 10.1002/jgra.50237 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2013
+        first_author: Winslow
+        container: "Journal of Geophysical Research: Space Physics"
+        title: "Mercury's magnetopause and bow shock from MESSENGER Magnetometer observations"
   - key: anderson2011     # MESSENGER offset-dipole strength/offset (source_ref)
-    verification: { status: unverified, identifier: { doi: "10.1126/science.1211001" }, source: "", checked: null }
+    verification:
+      status: verified
+      identifier: { doi: "10.1126/science.1211001" }
+      source: "crossref: 10.1126/science.1211001 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2011
+        first_author: Anderson
+        container: Science
+        title: "The Global Magnetic Field of Mercury from MESSENGER Orbital Observations"
   - key: hauck2013        # Mercury interior resistivity/structure (source_ref)
-    verification: { status: unverified, identifier: { doi: "10.1002/jgre.20091" }, source: "", checked: null }
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/jgre.20091" }
+      source: "crossref: 10.1002/jgre.20091 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2013
+        first_author: Hauck
+        container: "Journal of Geophysical Research: Planets"
+        title: "The curious case of Mercury's internal structure"
   - key: slavin2009       # MESSENGER upstream IMF (source_ref)
-    verification: { status: unverified, identifier: { doi: "10.1029/2008GL036158" }, source: "", checked: null }
+    verification:
+      status: verified
+      identifier: { doi: "10.1029/2008GL036158" }
+      source: "crossref: 10.1029/2008GL036158 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2009
+        first_author: Slavin
+        container: Geophysical Research Letters
+        title: "MESSENGER observations of Mercury's magnetosphere during northward IMF"
+references_unverified: []
+test_origin:
+  status: resolved-in-list
+  ref: jia2015                      # the only ref with a reference_results[] row = the only using-ref
+  authored_from: jia2015
 reference_results:
   - key: jia2015
     params_used: { sw_n_cm3: 40, sw_speed_post_kms: 700, sw_n_post_cm3: 80 }

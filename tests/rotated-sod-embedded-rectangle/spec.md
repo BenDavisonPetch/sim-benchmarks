@@ -131,11 +131,24 @@ validation_modes:
     score: 3
     score_justification: "Quantitative, automatable drift-vs-tolerance check; genuinely discriminating here because the rotated channel walls force small/partial cut cells (unlike an axis-aligned box), a known conservation risk — not a literature or exact-solution comparison, so capped at row 3 (SPEC §6.4 universal-diagnostic rule)."
 
-references: []
-references_unverified:
-  # Offline authoring (SPEC §5.2B): unverified until /add-refs (Stage 6, online) resolves it.
+references:
   - key: toro2009
-    verification: { status: unverified, identifier: { doi: "10.1007/b79761" }, source: "", checked: null }
+    # No original_intro: this entry is `provenance: synthesized`, so no paper introduced *this* test
+    # (§5.4 rule 5). toro2009 supplies the Sod states the synthesis is built on, nothing more.
+    verification:
+      status: verified
+      identifier: { doi: "10.1007/b79761" }
+      source: "crossref: 10.1007/b79761 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2009
+        first_author: Toro
+        container: Springer Berlin Heidelberg
+        title: "Riemann Solvers and Numerical Methods for Fluid Dynamics"
+references_unverified: []
+test_origin:
+  status: synthesized
+  derived_from: toro2009            # the rotated channel + embedded-rectangle framing is this repo's
 reference_results: []
 related_to: []
 headline_score: 5

@@ -119,14 +119,60 @@ validation_modes:
     score: 3
     score_justification: "The equilibrium is exactly known at all times (well-balancing is in principle automatable), but the paper's own reported check (Figs. 4-5) is a qualitative visual overlay with no stated numeric deviation tolerance — rubric row 3 (quantitative-capable reference, partial/qualitative reporting as given)."
 
-references: []
-references_unverified:
+references:
   - key: dematte2024
-    verification: { status: unverified, identifier: { doi: "10.1016/j.jcp.2024.113229" }, source: "", checked: null }
-  - key: dumbser2024vrmhd
-    verification: { status: unverified, identifier: { arxiv: "1801.06592" }, source: "", checked: null }
-  - key: fambri2023
-    verification: { status: unverified, identifier: { arxiv: "2012.11218" }, source: "", checked: null }
+    original_intro: false           # the entry was authored FROM this paper, which is not where the test came from
+    verification:
+      status: verified
+      identifier: { doi: "10.1016/j.jcp.2024.113229" }
+      source: "crossref: 10.1016/j.jcp.2024.113229 -> 200"
+      checked: "2026-07-27"
+      meta:
+        year: 2024
+        first_author: Dematté
+        container: Journal of Computational Physics
+        title: "An all Mach number scheme for visco-resistive magnetically-dominated MHD flows"
+  - key: dumbser2019vrmhd
+    original_intro: true            # stated attribution (§5.4 rule 2a) — see test_origin below
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/fld.4681", arxiv: "1801.06592" }
+      source: "crossref: 10.1002/fld.4681 -> 200; arxiv api: 1801.06592 -> 1 entry"
+      checked: "2026-07-27"
+      meta:
+        year: 2018                  # priority date; print issue 2019 (citekey year)
+        first_author: Dumbser
+        container: International Journal for Numerical Methods in Fluids
+        title: "A divergence-free semi-implicit finite volume scheme for ideal, viscous, and resistive magnetohydrodynamics"
+  - key: fambri2021
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/fld.5041", arxiv: "2012.11218" }
+      source: "crossref: 10.1002/fld.5041 -> 200; arxiv api: 2012.11218 -> 1 entry"
+      checked: "2026-07-27"
+      meta:
+        year: 2020                  # arXiv priority date; IJNMF issue 2021 (citekey year)
+        first_author: Fambri
+        container: International Journal for Numerical Methods in Fluids
+        title: "A novel structure preserving semi-implicit finite volume method for viscous and resistive magnetohydrodynamics"
+references_unverified: []
+test_origin:
+  # Only dematte2024 has reference_results rows, so it is the sole USING-ref — but §5.4 rule 2 (stated
+  # attribution) outranks rule 3 (earliest using-ref): the ingest pass recorded dematte2024's ref [41]
+  # (= dumbser2019vrmhd) as "source of this vortex setup" (wording from the ingest pass's
+  # pending_verification.md, deleted once every ref verified — see git history), and that work
+  # is already in references[], so it holds original_intro. dumbser2019vrmhd and fambri2021 are NOT
+  # using-refs (no reference_results row), which is consistent: an originator need not have a row.
+  # The recorded attribution is a PARAPHRASE captured at ingest, not a verbatim sentence — dematte2024
+  # has no arXiv copy, so no quote is reconstructed here (a paraphrase is not a quote). Capture the
+  # verbatim sentence from Sect. 4.1.2 on the next read of that paper.
+  # NOT chased further: dumbser2019vrmhd calls Balsara (2004, 10.1086/381377) "similar" — similarity is
+  # not origination, so balsara2004 is not added or credited without a sentence that says it introduced
+  # this vortex.
+  status: resolved-in-list
+  ref: dumbser2019vrmhd
+  authored_from: dematte2024
+  attribution_claims: []
 reference_results:
   - key: dematte2024
     params_used: { mode: "convergence study (4.1.2)", domain: "[0,10]x[0,10] periodic, centred at (5,5)", t_final: 1.0 }
@@ -145,7 +191,7 @@ reference_results:
     findings: >
       Normalised ||b|| = B/max||B0|| at t=500 and t=1000 (Fig. 4) and a 1D line-out along the
       x-axis at t=1000 (Fig. 5) show the vortex stationarity is satisfactorily preserved by both
-      CT adaptations, in good qualitative agreement with Fambri (2023).
+      CT adaptations, in good qualitative agreement with `fambri2021`.
 related_to: []
 headline_score: 5
 ---

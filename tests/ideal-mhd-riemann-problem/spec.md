@@ -118,21 +118,80 @@ validation_modes:
 
 references:
   - key: brio1988
-    original_intro: true
-    verification: { status: verified, identifier: { doi: "10.1016/0021-9991(88)90120-9" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 200); identifier corroborated by ADS, dl.acm.org, ScienceDirect listings (WebSearch); full text paywalled, no free copy found (ScienceDirect abstract page returns HTTP 403; no arXiv preprint exists pre-dating arXiv) -- identifier is verified, no reference_result recorded (SPEC 5.2 no-fabrication: cannot report findings not read)", checked: "2026-07-24" }
+    original_intro: true            # stated attribution (§5.4 rule 2a) — see test_origin below
+    verification:
+      status: verified
+      identifier: { doi: "10.1016/0021-9991(88)90120-9" }
+      source: "crossref: 10.1016/0021-9991(88)90120-9 -> 200; full text paywalled, no free copy (JCP 1988 predates arXiv) -- identifier verified, no reference_result recorded (SPEC 5.2: findings only when read)"
+      checked: "2026-07-27"
+      meta:
+        year: 1988
+        first_author: Brio
+        container: Journal of Computational Physics
+        title: "An upwind differencing scheme for the equations of ideal magnetohydrodynamics"
   - key: ryujones1995
     original_intro: false
-    verification: { status: verified, identifier: { doi: "10.1086/175437", arxiv: "astro-ph/9404074" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 202); full text retrieved via arXiv preprint astro-ph/9404074 (identical title/authors/journal ref to ApJ 442, 228 confirmed on the arXiv abstract page)", checked: "2026-07-24" }
-  - key: dumbser2024vrmhd
+    verification:
+      status: verified
+      identifier: { doi: "10.1086/175437", arxiv: "astro-ph/9404074" }
+      source: "crossref: 10.1086/175437 -> 200; arxiv api: astro-ph/9404074 -> 1 entry; full text retrieved via the arXiv preprint (title/authors/journal ref to ApJ 442, 228 match)"
+      checked: "2026-07-27"
+      meta:
+        year: 1994                  # arXiv priority date; the ApJ issue is 1995 (citekey year)
+        first_author: Ryu
+        container: The Astrophysical Journal
+        title: "Numerical magetohydrodynamics in astrophysics: Algorithm and tests for one-dimensional flow`"
+  - key: dumbser2019vrmhd
     original_intro: false
-    verification: { status: verified, identifier: { arxiv: "1801.06592" }, source: "verify_refs.py live HTTP resolution (arxiv.org -> HTTP 200); full text retrieved via the arXiv preprint. NOTE: published version is Dumbser, Balsara, Tavelli & Fambri, Int. J. Numer. Methods Fluids 89 (2019) 16-42, doi:10.1002/fld.4681 -- actual publication year 2019, not 2024 as the citekey suggests; DOI resolution via doi.org returned HTTP 403 (Wiley blocks scripted HEAD/GET in this environment) so the arXiv id is used as the resolvable identifier instead", checked: "2026-07-24" }
-  - key: fambri2023
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/fld.4681", arxiv: "1801.06592" }
+      source: "crossref: 10.1002/fld.4681 -> 200; arxiv api: 1801.06592 -> 1 entry; full text retrieved via the arXiv preprint"
+      checked: "2026-07-27"
+      meta:
+        year: 2018                  # priority (arXiv + Crossref issued); print issue is 2019 (citekey year)
+        first_author: Dumbser
+        container: International Journal for Numerical Methods in Fluids
+        title: "A divergence-free semi-implicit finite volume scheme for ideal, viscous, and resistive magnetohydrodynamics"
+  - key: fambri2021
     original_intro: false
-    verification: { status: verified, identifier: { arxiv: "2012.11218" }, source: "verify_refs.py live HTTP resolution (arxiv.org -> HTTP 200); full text retrieved via the arXiv preprint. NOTE: published version is Fambri, Int. J. Numer. Methods Fluids 93(12) (2021) 3447-3489, doi:10.1002/fld.5041 -- actual publication year 2021, not 2023 as the citekey suggests; DOI resolution via doi.org returned HTTP 403 (Wiley blocks scripted HEAD/GET in this environment) so the arXiv id is used as the resolvable identifier instead", checked: "2026-07-24" }
+    verification:
+      status: verified
+      identifier: { doi: "10.1002/fld.5041", arxiv: "2012.11218" }
+      source: "crossref: 10.1002/fld.5041 -> 200; arxiv api: 2012.11218 -> 1 entry; full text retrieved via the arXiv preprint"
+      checked: "2026-07-27"
+      meta:
+        year: 2020                  # arXiv priority date; the IJNMF issue is 2021 (citekey year)
+        first_author: Fambri
+        container: International Journal for Numerical Methods in Fluids
+        title: "A novel structure preserving semi-implicit finite volume method for viscous and resistive magnetohydrodynamics"
   - key: dematte2024
     original_intro: false
-    verification: { status: verified, identifier: { doi: "10.1016/j.jcp.2024.113229" }, source: "verify_refs.py live HTTP resolution (doi.org -> HTTP 200); full text retrieved via the Cambridge institutional repository accepted manuscript (open access)", checked: "2026-07-24" }
+    verification:
+      status: verified
+      identifier: { doi: "10.1016/j.jcp.2024.113229" }
+      source: "crossref: 10.1016/j.jcp.2024.113229 -> 200; full text retrieved via the Cambridge institutional repository accepted manuscript (open access)"
+      checked: "2026-07-27"
+      meta:
+        year: 2024
+        first_author: Dematté
+        container: Journal of Computational Physics
+        title: "An all Mach number scheme for visco-resistive magnetically-dominated MHD flows"
 references_unverified: []
+test_origin:
+  # brio1988 has no reference_results row (its text is unreadable), so it is NOT a using-ref: it holds
+  # original_intro purely via the stated-attribution branch (§5.4 rule 2a). This entry is the proof
+  # that the attribution branch is load-bearing — earliest-using-ref ordering would name ryujones1995.
+  status: resolved-in-list
+  ref: brio1988
+  authored_from: dematte2024
+  # No verbatim attribution sentence was captured at ingest (add-test predated attribution_claims), so
+  # none is recorded here rather than reconstructed — a paraphrase is not a quote. The attribution is
+  # nonetheless documented, not guessed: this entry's `## Notes` records "RP1 (Brio-Wu) is originally
+  # due to brio1988", the preset is named for its originators throughout the entry, and dematte2024
+  # deposits Brio & Wu (1988) in its Crossref reference list
+  # (`cite_chain.py --citing 10.1016/j.jcp.2024.113229 --match Brio` -> 10.1016/0021-9991(88)90120-9).
+  attribution_claims: []
 reference_results:
   # brio1988 intentionally has NO reference_result: its identifier is verified (DOI resolves,
   # corroborated by ADS/dl.acm.org/ScienceDirect listings) but the paper's own full text is
@@ -154,9 +213,9 @@ reference_results:
       constant 0.8 used. NOTE: the right state used in this ref is rho_R=1.0, By_R=4/sqrt(4*pi),
       p_R=1.0 (a clean equilibrium state); this differs from the RP2 preset canonical to this entry
       (rho_R=0.9891, By_R=1.135262, p_R=0.97159), which is inherited from dematte2024's Table 1 and
-      is itself inherited from a modified right state used by dumbser2024vrmhd and fambri2023 -- both
+      is itself inherited from a modified right state used by dumbser2019vrmhd and fambri2021 -- both
       of whom nonetheless attribute the RP2 concept to this paper.
-  - key: dumbser2024vrmhd
+  - key: dumbser2019vrmhd
     params_used: { preset: "RP1 (Brio-Wu)", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.125, p_L: 1.0, p_R: 0.1, t_final: 0.1, CFL: 0.9 }
     method: "semi-implicit finite volume (SIFV) scheme; convective subsystem discretized explicitly with a second-order MUSCL-type TVD reconstruction, pressure subsystem treated implicitly; compared to an exact MHD Riemann solver (courtesy S.A.E.G. Falle)"
     resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
@@ -167,25 +226,25 @@ reference_results:
       choice method reproduces the correct solution (per Falle). Numerical results are in line with
       others published in the literature despite the density-profile disagreement; the magnetic
       field component By agrees well with the exact solution.
-  - key: dumbser2024vrmhd
+  - key: dumbser2019vrmhd
     params_used: { preset: "RP2 (Ryu-Jones seven-wave, modified right state)", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.08, rho_R: 0.9891, p_L: 0.95, p_R: 0.97159, t_final: 0.2, CFL: 0.9 }
     method: "same as RP1 entry above"
     resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
     amr: "none"
     findings: "Wave pattern composed of discontinuities in all seven MHD waves; agreement between the numerical and exact solution is \"very good\"."
-  - key: dumbser2024vrmhd
+  - key: dumbser2019vrmhd
     params_used: { preset: "RP3", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.7, rho_R: 0.2, p_L: 1.7, p_R: 0.2, t_final: 0.15, CFL: 0.9 }
     method: "same as RP1 entry above"
     resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
     amr: "none"
     findings: "Also contains seven waves, but compared to RP2 the two left waves are rarefactions rather than shocks; the scheme captures the wave pattern properly apart from the weak right-moving shock."
-  - key: dumbser2024vrmhd
+  - key: dumbser2019vrmhd
     params_used: { preset: "RP4", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.4, p_L: 1.0, p_R: 0.4, t_final: 0.16, CFL: 0.9 }
     method: "same as RP1 entry above"
     resolution: "1000 pressure control volumes on domain [-0.5,0.5]"
     amr: "none"
     findings: "The scheme has some difficulty capturing the second wave from the left at the given grid resolution (1000 cells), behaviour the authors state is similar to that observed in two other published works; the By profile is well reproduced."
-  - key: fambri2023
+  - key: fambri2021
     params_used: { preset: "RP1 (Brio-Wu)", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.125, p_L: 1.0, p_R: 0.1, t_final: 0.1, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
     method: "structure-preserving semi-implicit finite volume method for viscous/resistive MHD; convective subsystem explicit (second-order MUSCL-type), pressure/magnetic subsystem implicit with stiffening parameters theta_p, theta_B; mesh resolution dx=1e-3; compared to an exact MHD Riemann solver (courtesy S.A.E.G. Falle)"
     resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
@@ -196,19 +255,19 @@ reference_results:
       of a compared reference; using a purely convective Courant number dt=dt(lambda_v) instead
       yields a gain of 2-5x in Courant number, at the cost of numerical diffusion from lower
       time-accuracy and slightly more oscillatory behaviour from unresolved time-scales.
-  - key: fambri2023
+  - key: fambri2021
     params_used: { preset: "RP2 (Ryu-Jones seven-wave, modified right state)", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.08, rho_R: 0.9891, p_L: 0.95, p_R: 0.97159, t_final: 0.2, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
     method: "same as RP1 entry above"
     resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
     amr: "none"
     findings: "Same Courant-number-choice trade-off reported jointly for RP1-RP4 (see RP1 entry above): 2-5x gain in Courant number at the cost of accuracy when using a purely convective time step."
-  - key: fambri2023
+  - key: fambri2021
     params_used: { preset: "RP3", domain: "[-0.5,0.5]", xd: -0.1, rho_L: 1.7, rho_R: 0.2, p_L: 1.7, p_R: 0.2, t_final: 0.15, CFL: 0.9, theta_p: 1.0, theta_B: 0.55 }
     method: "same as RP1 entry above"
     resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
     amr: "none"
     findings: "Same Courant-number-choice trade-off reported jointly for RP1-RP4 (see RP1 entry above): 2-5x gain in Courant number at the cost of accuracy when using a purely convective time step."
-  - key: fambri2023
+  - key: fambri2021
     params_used: { preset: "RP4", domain: "[-0.5,0.5]", xd: 0.0, rho_L: 1.0, rho_R: 0.4, p_L: 1.0, p_R: 0.4, t_final: 0.16, CFL: 0.9, theta_p: 1.0, theta_B: 0.65 }
     method: "same as RP1 entry above"
     resolution: "mesh resolution dx = 1e-3 on domain [-0.5,0.5] (~1000 cells)"
@@ -281,14 +340,14 @@ RP1 (Brio-Wu) is originally due to `brio1988` (identifier verified; full text in
 `reference_result` is recorded for it — see Notes). `ryujones1995` originated RP2 as their "test 2a"
 (seven-wave shock tube, 512 cells on [0,1], Courant constant 0.8): they report strong fast shocks
 resolved within 2-4 cells, rotational discontinuities within 3-5 cells with steepening (6-8 cells
-without), and the contact discontinuity spread over more cells than that. `dumbser2024vrmhd`
-(1000 control volumes on [-0.5,0.5], CFL 0.9) and `fambri2023` (dx=1e-3 on [-0.5,0.5], CFL 0.9,
+without), and the contact discontinuity spread over more cells than that. `dumbser2019vrmhd`
+(1000 control volumes on [-0.5,0.5], CFL 0.9) and `fambri2021` (dx=1e-3 on [-0.5,0.5], CFL 0.9,
 theta_B=0.55 for RP1-3 / 0.65 for RP4) both run all four RP1-4 presets with their own
 semi-implicit schemes: for RP1 they report the same artificial compound wave as `dematte2024` and
 attribute the correct (non-compound) solution only to Glimm's random choice method; for RP3
-`dumbser2024vrmhd` reports the wave pattern is captured "properly apart from the weak
+`dumbser2019vrmhd` reports the wave pattern is captured "properly apart from the weak
 right-moving shock"; for RP4 they report difficulty "capturing the second wave from the left at
-the given grid resolution"; `fambri2023` reports a purely-convective time step yields a 2-5x gain
+the given grid resolution"; `fambri2021` reports a purely-convective time step yields a 2-5x gain
 in Courant number at the cost of numerical diffusion and mild time-scale-related oscillation,
 mirroring `dematte2024`'s own purely-advective-vs-Alfvenic dt finding for RP3/RP4.
 
@@ -308,14 +367,12 @@ verify_refs.py) but carries no `reference_result`: ScienceDirect returns HTTP 40
 fetches and no free copy of the 1988 paper (pre-arXiv) could be located, so no findings/method/
 resolution could be read from the primary source itself (SPEC 5.2 no-fabrication contract).
 
-`dumbser2024vrmhd` and `fambri2023` are citekeys carried over unmodified from the offline-authored
-`pending_verification.md`; their actual publication years are 2019 (Int. J. Numer. Methods Fluids
-89, 16-42, doi:10.1002/fld.4681) and 2021 (Int. J. Numer. Methods Fluids 93(12), 3447-3489,
-doi:10.1002/fld.5041) respectively, not 2024/2023 as the keys suggest. Both DOIs are correct and
-match the titles given in `pending_verification.md`, but `doi.org` returns HTTP 403 to this
-script's automated HEAD/GET in this environment (Wiley appears to block non-browser requests); the
-arXiv preprint identifiers (1801.06592, 2012.11218) were used instead as the `verified` identifier
-since they resolve live over HTTP 200. Both papers' RP1-RP4 initial states are expressed in
+`dumbser2019vrmhd` and `fambri2021` were originally keyed `dumbser2024vrmhd` / `fambri2023` from the
+offline-authored `pending_verification.md` — arXiv-fetch years, not publication years. Renamed to the
+print years (Int. J. Numer. Methods Fluids 89, 16-42, doi:10.1002/fld.4681; and 93(12), 3447-3489,
+doi:10.1002/fld.5041). Both refs now record **both** identifiers (DOI + arXiv), so `meta.year` is the
+priority date (2018 / 2020) — that, not the citekey, is what §5.4 orders by. Both papers' RP1-RP4
+initial states are expressed in
 un-normalized Gaussian-type units (a factor of sqrt(4*pi) larger in B) and on domain [-0.5,0.5]
 (vs. this entry's [0,1], permeability-unity convention) — same physical states, different
 convention, consistent with the b_field_convention note above.

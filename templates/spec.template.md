@@ -90,7 +90,28 @@ validation_modes:                    # R; >=1. Each independently scored (§6.3,
     # measured: "<the difference being measured>"
 
 references: []                       # R (may be []); verified refs only (status: verified, §5.1)
+  # ref shape (§5.1): key + optional original_intro (set ONLY by /add-refs, §5.4) + verification;
+  # `meta` is resolver output pasted from `verify_refs.py --meta` — NEVER typed from memory:
+  # - key: <citekey>
+  #   original_intro: true
+  #   verification:
+  #     status: verified
+  #     identifier: { doi: "<10.x/y>", arxiv: "<id>" }   # record BOTH when both exist
+  #     source: "crossref: <doi> -> 200"
+  #     checked: "<YYYY-MM-DD>"
+  #     meta: { year: <YYYY>, first_author: <Surname>, container: "<journal>", title: "<title>" }
 references_unverified: []            # R (may be []); quarantined (unverified | user-supplied)
+# test_origin: entry-level attribution (§5.4). /add-test fills authored_from + attribution_claims[];
+# only /add-refs resolves `status`/`ref`/`external`. `pending` is a correct answer; a guess is not.
+# test_origin:
+#   status: pending                  # resolved-in-list | resolved-external | pending | synthesized
+#   ref: <the original_intro: true key>          # iff resolved-in-list
+#   authored_from: <ref this entry was ingested from>
+#   external: { author: <Surname>, year: <YYYY>, doi: "<10.x/y>" }   # iff resolved-external
+#   derived_from: <ref>              # optional, synthesized entries
+#   attribution_claims:
+#     - stated_by: <citekey>
+#       quote: "<VERBATIM sentence stating where the test came from>"
 reference_results: []                # R (may be []); what a specific ref DID (§5.3); key in references[]
 related_to: []                       # R (may be []); sibling slugs (§2.3 forks)
 headline_score: 0                    # R; = max(validation_modes[].score); set by reindex.py (§8.2)

@@ -142,14 +142,18 @@ unscored provenance metrics (SPEC §6.4).
 
 | Field | R/O | Type | Notes |
 |---|---|---|---|
-| `references` | R | list | Verified refs only (`status: verified`, SPEC §5.1). `[]` allowed. Each carries `verification{status, identifier, source, checked}`. See §5 rules and `conventions.md`. |
+| `references` | R | list | Verified refs only (`status: verified`, SPEC §5.1). `[]` allowed. Each carries `verification{status, identifier, source, checked, meta?}`. `meta{year, first_author, container, title}` is **resolver output pasted from `verify_refs.py --meta`, never typed** — `meta.year` (the priority date over a doi+arxiv pair) is what SPEC §5.4 orders attribution by; check 5 requires it on a using-ref with a doi/arxiv, check 10 warns when it disagrees with the live resolution. See §5 rules and `conventions.md`. |
 | `references_unverified` | R | list | Quarantined refs (`unverified`/`user-supplied`); excluded from INDEX and generated paper sections. `[]` allowed. |
+| `test_origin` | O | map | Entry-level attribution (SPEC §5.4): `{status: resolved-in-list\|resolved-external\|pending\|synthesized, ref?, authored_from?, external?, derived_from?, attribution_claims[]{stated_by, quote}}`. `/add-test` fills `authored_from` + verbatim `attribution_claims[]`; only `/add-refs` resolves `status`/`ref`/`external`; `/promote-refs` never touches it. `validate.py` check 11. |
 | `reference_results` | R | list | What a specific ref *did* (SPEC §5.3). `[]` allowed. `key` must be in `references[]`. Fields: `key, params_used, method, resolution, amr, findings, figure_asset?`. Method/resolution/amr are provenance-only — never in the problem block (`validate.py` check 7). |
 | `related_to` | R | list[slug] | Sibling slugs (same physics, different treatments/capabilities). `[]` allowed. |
 | `headline_score` | R | int | `= max(validation_modes[].score)`; **set by `reindex.py`** (SPEC §8.2, §11.8). Hand value must equal the recomputed max or `validate.py` check 3 fails. |
 
-Per-ref `original_intro` (bool, default `unknown`) is set only during `/add-refs` by the SPEC §5.4
-rule.
+Per-ref `original_intro` (bool, `unknown` = key absent) marks the one ref that introduced the test. Set
+only during `/add-refs` by the SPEC §5.4 rule: a **stated** attribution wins over dates; otherwise the
+earliest **using-ref** (one with a `reference_results[]` row) by `verification.meta.year`; unresolved
+stays unresolved (`test_origin.status: pending`, no flag anywhere); a `provenance: synthesized` entry
+never carries one. At most one `true` per entry, and only on a verified key.
 
 ---
 

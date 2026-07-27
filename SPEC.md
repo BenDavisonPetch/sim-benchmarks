@@ -366,10 +366,19 @@ Each ref carries:
 ```yaml
 verification:
   status: verified | unverified | user-supplied
-  identifier: { doi: ... }        # or { arxiv: ... } or { url: ... }
+  identifier: { doi: ..., arxiv: ... }   # doi / arxiv / url; record BOTH when both exist
   source: <how it was checked>    # tool / retrieval artifact; empty until checked
   checked: <date | null>
+  meta: { year: 2018, first_author: Dumbser, container: "<journal>", title: "<title>" }
 ```
+- `meta` is **resolver output only** — pasted from `verify_refs.py --meta`, never typed from memory.
+  It sits under `verification:` (beside `source`/`checked`) rather than next to `key`/`original_intro`
+  precisely because that authored zone invites filling it in from memory; here it is visible machine
+  provenance and goes stale as a unit when the identifier changes. `meta.year` is the **priority
+  date** (min over a doi+arxiv pair) and is the date §5.4 orders attribution by — a citekey year is a
+  label, never data. "Resolver-derived, never memory" is unenforceable statically; it is enforced
+  **online** by check 10 diffing stored `meta` against the live resolution. A url-only ref has no
+  `meta` (a bare URL carries no bibliographic record) and none is invented for it.
 - Nothing enters `references[]` (the trusted, indexed list) unless `status: verified`.
 - `unverified` / `user-supplied` refs sit in `references_unverified[]`, **excluded from INDEX and
   from any generated paper section**, until upgraded.
@@ -378,12 +387,14 @@ verification:
 
 **A. In-repo script gate — `scripts/verify_refs.py` (has internet, authoritative trust boundary):**
 - Parse bibtex; every ref must have a resolvable identifier (DOI / arXiv / URL).
-- Attempt live resolution and **report** each ref RESOLVED / UNRESOLVED. The status/list write-back
-  (`unverified → verified`, `references_unverified[] → references[]`) is performed by `/add-refs`
-  (or `verify_refs.py --write`), not the default report-only run — a PyYAML frontmatter round-trip
-  would destroy authored inline comments.
-- **Hard fail** the build if any ref has `status: verified` with no identifier or an unresolvable
-  one. (A verified ref with no resolvable id is a contradiction.)
+- Attempt live resolution against **metadata APIs only** (§8.4) and **report** each ref RESOLVED /
+  UNRESOLVED / UNDECIDED, plus its resolver-derived `meta` under `--meta`. The status/list write-back
+  (`unverified → verified`, `references_unverified[] → references[]`) is a hand-edit performed by
+  `/add-refs` or `/promote-refs`; no in-place `--write` exists, because a PyYAML frontmatter
+  round-trip would destroy authored inline comments (D-012).
+- **Hard fail** the build if any ref has `status: verified` with no identifier or one that provably
+  does not exist. (A verified ref with no resolvable id is a contradiction.) A network failure is
+  **not** disproof: undecided resolutions warn, they never red the build.
 - `--offline`: skip the live network call (warns, leaves statuses untouched); the script still
   runs and still forbids fabricated `verified`.
 
@@ -422,16 +433,52 @@ reference_results:
     figure_asset: assets/dahlburg1989-pressure.png    # optional; cited + reproduction described
 ```
 
-### 5.4 `original_intro`
-Per-ref boolean `original_intro`. Default `unknown`. Set only during `/add-refs`, by rule: among
-**verified** refs using the test, the earliest publication is `original_intro` — **unless** a ref
-states it took the test from elsewhere, in which case follow that attribution. Never guess beyond
-this rule.
+### 5.4 Test origin (`test_origin` + `original_intro`)
+There is **one originator per test**, so the attribution carrier is **entry-level**; when the
+originator is not in `references[]` no per-ref boolean can hold it. The per-ref boolean
+`original_intro` stays (a paper section reads it) and `unknown` still means "key absent" — there is
+no tri-state literal.
+
+```yaml
+test_origin:
+  status: resolved-in-list | resolved-external | pending | synthesized
+  ref: brio1988                    # required iff resolved-in-list; the original_intro: true key
+  authored_from: dematte2024       # ref this entry was ingested from (set by /add-test)
+  external: { author: Balsara, year: 2004, doi: "10.1086/381377" }   # iff resolved-external
+  derived_from: toro2009           # optional, synthesized entries
+  attribution_claims:
+    - stated_by: dematte2024
+      quote: "<verbatim sentence stating where the test came from>"
+```
+
+Rule, in precedence order:
+
+1. **Definitions.** A **using-ref** is a `references[]` entry with a `reference_results[]` row (it ran
+   this test), plus `test_origin.authored_from`. A ref cited only as a `parameters[].source_ref`, or
+   only as a mode `inputs.reference` of `kind: reference` (empirical model / data source), is **not** a
+   using-ref. **Publication year** = `verification.meta.year`, never a citekey year (§5.1).
+2. **Stated attribution beats dates.** Record the sentence verbatim in `attribution_claims[]`, then:
+   (a) attributed work already in `references[]` → it is `original_intro: true`, `resolved-in-list`;
+   (b) not in the list → `/add-refs` **must chase** it (`cite_chain.py`, §8.6) and, once verified,
+   **add** it and set it `true` — the one sanctioned case of `/add-refs` adding a ref for provenance,
+   and an unreadable originator correctly carries no `reference_results` row; (c) chase fails to
+   verify → no ref is `true`; `resolved-external` + `external:{}`.
+3. **Otherwise the earliest using-ref** by `meta.year` is `true`; all other using-refs are `false`.
+4. **Unknown stays unknown.** Missing/tied years, or an unfinished chase → no `original_intro`
+   anywhere, `status: pending` + a note. `pending` is a correct answer; a guess is not.
+5. **`provenance: synthesized` ⇒ `status: synthesized`** (optional `derived_from`), never a `true` —
+   a synthesized entry has no literature originator.
+6. At most **one** `true` per entry, only on a verified key; for a dedup-folded entry "the test" is the
+   fold-level test.
+
+Set **only** by `/add-refs`. `/add-test` fills `authored_from` + `attribution_claims[]` only.
+`/promote-refs` touches neither. `validate.py` check 11 enforces the structure (§8.3).
 
 ### 5.5 `/add-refs`
 Enriches an existing entry so a paper section is writable: for each verified ref, fills specific
 `findings` (with mandatory quantitative numbers where the ref reports them), `params_used`,
-`method`, `resolution`. Resolves `original_intro` per §5.4. Runs `verify_refs.py` (or emits
+`method`, `resolution`. Resolves `test_origin` + `original_intro` per §5.4 (chasing a stated
+attribution with `cite_chain.py`, §8.6). Runs `verify_refs.py` (or emits
 `pending_verification.md` if offline). Also resolves any `pending_extraction.md` parameter whose
 defining reference it can retrieve. Never emits "compares with literature".
 
@@ -594,7 +641,10 @@ Checks:
 3. Each mode `score` ∈ 1..5; `headline_score == max(modes)`.
 4. `INDEX.tsv` in sync (regenerate in-memory, diff, fail on drift), including capability flags.
 5. Ref rules: trusted `references[]` all `verified`; `verified` ⇒ resolvable identifier present;
-   unverified refs only in `references_unverified[]` and absent from INDEX.
+   unverified refs only in `references_unverified[]` and absent from INDEX; a **using-ref** (§5.4
+   rule 1) whose identifier carries a doi/arxiv must also carry `verification.meta.year` — the date
+   §5.4 orders by (not required for url-only, non-using, or Handle-API-only refs, where no metadata
+   record exists).
 6. IC/BC expression language parses (checked **structurally** via Python's `ast` — grammar,
    function allow-list, arity — not by numeric evaluation, so numpy is not a dependency, §8.5); aux
    bindings resolve; `units` tags present; any BC state referencing `t` ⇒ `time_dependent_bc ==
@@ -610,15 +660,60 @@ Checks:
 8. `eos` present iff the material's base declares `requires_eos: true`.
 9. `baseline.config_delta` does not change the entry's INDEX capability set (computed from the
    canonical set only).
-10. `verified`-ref identifier resolvable (network-dependent). `--offline` ⇒ downgrade this to a
-    warning, not a failure.
+10. `verified`-ref identifier resolvable (network-dependent). A `notfound` (the identifier does not
+    exist on any resolver rung) is an ERROR; an `unreachable` resolution (timeout / 5xx — existence
+    undecided) is a WARN, never a build failure. Stored `verification.meta` that disagrees with the
+    live resolution warns — the only mechanical detector of hand-typed metadata. `--offline` ⇒
+    downgrade the whole check to warnings.
+11. §5.4 consistency (entirely structural — runs identically under `--offline`): at most one
+    `original_intro: true` per entry (11a) and never on a `references_unverified[]` key (11b); no
+    using-ref's `meta.year` predates the credited ref (11c), with a WARN when a using-ref's year is
+    missing and ordering would otherwise be decidable (11c′); `resolved-in-list` names exactly
+    the `true` key and that key is in `references[]` (11e); `resolved-external` / `synthesized` credit
+    no listed ref, and `provenance: synthesized` forces `status: synthesized` (11f); an absent or
+    `pending` `test_origin` with using-refs present warns "run /add-refs" (11g). A citekey-embedded
+    year disagreeing with `meta.year` is **not** checked: a citekey is a legal opaque label and the two
+    differ routinely (preprint vs print issue), so the check could only ever emit an unactionable
+    permanent warning. Every check here is either actionable or silent — `--offline` reports one
+    skipped-resolution line for the whole run, not one per ref.
 
 ### 8.4 `scripts/verify_refs.py`
-§5.2A. Report-only by default (gates + reports RESOLVED/UNRESOLVED; hard-fails a `verified` ref with
-no resolvable identifier); `--write` performs the status/list upgrade. `--offline` supported.
+§5.2A. Report-only (gates + reports RESOLVED / UNRESOLVED / UNDECIDED; hard-fails a `verified` ref
+whose identifier provably does not exist). `--offline` and `--meta` (paste-ready `verification.meta`
+blocks) supported; `--lookup <doi|arxiv:id|url>` resolves one identifier ad hoc.
+
+**Resolver chain — publisher landing pages are never contacted.** DOI: `api.crossref.org/works/<doi>`
+→ `api.datacite.org/dois/<doi>` → `doi.org/api/handles/<doi>` (existence only, no metadata). arXiv:
+`https://export.arxiv.org/api/query?id_list=<id>` requiring a matching `<entry>` (a bogus id returns
+200 with an empty feed), falling back to a HEAD on `arxiv.org/abs`. URL: HEAD then GET. Resolving via
+`doi.org/<doi>` is **forbidden**: it redirects to the publisher, where Wiley/AGU/Science answer 403 to
+any non-browser request, so valid DOIs could never be verified — and the documented escape ("use the
+arXiv id instead") recorded the wrong canonical identifier. Metadata APIs are never captcha'd, so a
+DOI that 404s on all three rungs does not exist. Resolution state is tri-valued
+(`found`/`notfound`/`unreachable`) so a socket timeout warns instead of failing the build.
+
+**No `--write` / `--write-meta`, deliberately.** Rejected, not missing: PyYAML cannot round-trip the
+authored inline comments in a spec's frontmatter (D-012), and `reindex.py`'s single-scalar-line edit
+does not generalize to a nested multi-line ref entry. Promotion and `meta` insertion are hand-edits
+driven by the report. Do not re-propose it.
 
 ### 8.5 `scripts/new_test.py`
 Scaffolds `tests/<slug>/` from `templates/spec.template.md` + empty `assets/`.
+
+### 8.6 `scripts/cite_chain.py`
+Attribution chase, one hop (§5.4 rule 2b):
+
+    python3 scripts/cite_chain.py --citing <doi> --match <substring>
+
+Case-insensitive substring grep over the **citing** work's publisher-deposited Crossref `reference`
+array; prints `DOI | first-author | year | article-title | journal`, flags rows deposited only as free
+text as `(no DOI deposited)`, exits 1 on zero matches, and says `no reference list deposited by
+publisher` when the array is empty — books typically deposit none (e.g. `10.1007/b79761` → 0), so that
+path is real and means "fall back to WebSearch", not "the citation is absent". Some publishers (AGU /
+Wiley among them) deposit each row as a **bare DOI** with no author or title, which a surname grep
+cannot see; a zero-match run reports that count so the caller matches on a DOI fragment or resolves a
+candidate with `--lookup` instead of concluding the citation is missing. Imports the Crossref helper
+from `verify_refs.py`; no duplicated HTTP, no fuzzy matching.
 
 All scripts: Python 3, deps `pyyaml`, `bibtexparser`. Runnable by the model (network calls are the
 only gated part).

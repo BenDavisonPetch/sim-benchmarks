@@ -48,9 +48,13 @@ Hard boundaries (they are `add-refs`'s job, not this skill's):
   `amr`.** No enrichment.
 - **Never pull full paper text.** Identifier discovery only — see Step 1.
 - **Never touch `pending_extraction.md`** or the problem block.
+- **Never set `original_intro` or `test_origin`** (SPEC §5.4: `/add-refs` only). Attribution needs
+  reading what a paper *states* about where the test came from, which is enrichment. If a promoted
+  ref is a **using-ref** (it has a `reference_results[]` row) and the entry's `test_origin` is
+  absent or `pending`, report `origin unresolved — run /add-refs` and move on.
 
-The one derived field this skill does set is `original_intro`, and only by the mechanical §5.4 rule
-(Step 3) — never by research.
+This skill sets no derived field at all: it moves refs between two lists and stamps
+`verification` (including the resolver-produced `meta`).
 
 ---
 
@@ -80,41 +84,33 @@ For every ref in `references_unverified[]`:
 
 ## Step 2. Resolve + move (verify_refs.py is report-only — you hand-edit)
 
-Run `.venv/bin/python scripts/verify_refs.py`. The script is **report-only**: its `--write` upgrade is
-deliberately not implemented (PyYAML would strip authored inline comments, D-012). It prints
-`RESOLVED`/`UNRESOLVED` per identifier but moves nothing.
+Run `.venv/bin/python scripts/verify_refs.py --meta`. The script is **report-only**: an in-place
+`--write` upgrade is deliberately not implemented (PyYAML would strip authored inline comments,
+D-012). It prints `RESOLVED` / `UNRESOLVED` / `UNDECIDED` per identifier, plus — with `--meta` — a
+paste-ready `meta:` block at spec indentation. It moves nothing.
 
 For each ref that printed **RESOLVED**, hand-edit the frontmatter:
 
 - Move the entry from `references_unverified[]` into `references[]`.
-- Stamp `verification: { status: verified, identifier: {...}, source: "<what resolved it>",
-  checked: "<YYYY-MM-DD>" }`.
+- Stamp `verification: { status: verified, identifier: {...}, source: "<the printed detail>",
+  checked: "<YYYY-MM-DD>" }` and paste the printed `meta:` block under `verification:`.
+- **Paste `meta`, never type it.** It is machine provenance; check 10 compares it against the live
+  resolution and warns on drift, which is how hand-typed metadata gets caught.
 
-Leave every `UNRESOLVED` ref in `references_unverified[]` with `status: unverified`.
+Leave every `UNRESOLVED` ref in `references_unverified[]` with `status: unverified`. **UNDECIDED**
+(network could not decide — timeout / 5xx) is not a verdict: retry later, promote nothing.
 
-**Valid-but-bot-blocked identifier.** Some publishers (e.g. Wiley) return HTTP 403 to the script's
-non-browser requests even for a valid DOI. If the identifier is corroborated (title/authors matched a
-retrieved landing page in Step 1), record a **resolvable** identifier — prefer the arXiv id, which
-resolves 200 — as the `verified` identifier and note the blocked DOI in `source`. Do **not** hard-fail
-and do **not** fabricate.
+**A DOI that does not resolve does not exist.** The resolver never contacts a publisher landing
+page: DOIs go to Crossref, then DataCite, then the DOI Handle API, none of which bot-block or
+captcha. A DOI that 404s on **all three** does not exist. Never substitute an arXiv id to make a DOI
+"pass" — that records the wrong canonical identifier; when a ref has both, record **both** under
+`identifier` (the resolver then reports the priority date as `meta.year`).
 
 Re-run `verify_refs.py`; every ref now in `references[]` must print `RESOLVED`.
 
 ---
 
-## Step 3. Set original_intro for newly-verified using-refs (§5.4 rule only)
-
-Only if a promoted ref is a **using-ref** (it has a matching `reference_result[]` or a mode
-`inputs.reference` pointing at it) and its `original_intro` is unset. Apply the §5.4 rule mechanically,
-using **actual publication dates** (not citekey years): among the verified using-refs, the earliest
-publication is `original_intro: true`, every other is `false`; if a ref states it took the test from
-elsewhere, follow that. If dates cannot be ordered, leave `unknown` and note it. **Never** research
-beyond the date ordering. For a dedup-folded multi-preset entry, "the test" is the fold-level test —
-one `true` across all folded presets.
-
----
-
-## Step 4. Reindex + validate
+## Step 3. Reindex + validate
 
 Run `.venv/bin/python scripts/reindex.py`, then online `.venv/bin/python scripts/validate.py`. Newly
 verified refs now satisfy check 7 (`reference_results[]` / mode keys resolve to `references[]`) and
@@ -129,7 +125,8 @@ confirm nothing regressed, report that promotion needs an online run, and stop.
 ## Done when
 
 Every `references_unverified[]` ref whose identifier resolves online has moved to `references[]` with a
-`verification` stamp (`status: verified` + identifier + `source` + `checked`); unresolvable refs remain
-`unverified`; **zero** new references, `reference_results`, or findings were authored; `original_intro`
-set by the §5.4 rule only where a promoted using-ref needed it; `reindex.py` + online `validate.py`
-pass for this entry (any remaining errors are pre-existing and in unrelated entries).
+`verification` stamp (`status: verified` + identifier + `source` + `checked` + the pasted resolver
+`meta`); unresolvable refs remain `unverified`; **zero** new references, `reference_results`, or
+findings were authored; `original_intro`/`test_origin` untouched (reported as `origin unresolved` where
+a promoted using-ref has none); `reindex.py` + online `validate.py` pass for this entry (any remaining
+errors are pre-existing and in unrelated entries).

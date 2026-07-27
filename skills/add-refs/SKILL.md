@@ -3,7 +3,8 @@ name: add-refs
 description: >
   Enrich an existing entry with literature references + their findings until a paper section is
   writable (SPEC §9.4 -> §5.5). Per verified ref: fill findings (quantitative numbers verbatim WITH
-  units), params_used, method, resolution; resolve original_intro (§5.4); run verify_refs.py online or
+  units), params_used, method, resolution; resolve test_origin + original_intro (§5.4, chasing a stated
+  attribution with cite_chain.py); run verify_refs.py online or
   emit pending_verification.md offline; resolve any pending_extraction.md parameter whose defining ref
   is retrievable. Pulled in by /add-refs. Copy-and-fill against templates/refs-enrichment.worksheet.md.
   NEVER fabricates a citation; never writes "compares with literature".
@@ -12,13 +13,14 @@ description: >
 # add-refs — enrich an entry to paper-section quality (SPEC §9.4, §5.3–§5.5)
 
 Fill the reference-provenance half of an existing entry: for each **verified** ref, what it actually
-did with this test (`reference_results[]`), the earliest-user attribution (`original_intro`), and any
-reference-defined problem parameter now retrievable. Method / resolution / AMR provenance lives here
-and **only** here (§1.6) — never in the problem block. Runnable by a Sonnet-class model.
+did with this test (`reference_results[]`), where the test came from (`test_origin` +
+`original_intro`), and any reference-defined problem parameter now retrievable. Method / resolution /
+AMR provenance lives here and **only** here (§1.6) — never in the problem block. Runnable by a
+Sonnet-class model.
 
 **Input.** A `<slug>` after `/add-refs`. **Output.** The entry's `reference_results[]`, `references[]`
-/ `references_unverified[]`, and `original_intro` flags filled; offline a `pending_verification.md`;
-any resolvable `pending_extraction.md` rows written back.
+/ `references_unverified[]`, `test_origin`, and `original_intro` flags filled; offline a
+`pending_verification.md`; any resolvable `pending_extraction.md` rows written back.
 
 ---
 
@@ -79,22 +81,68 @@ no-fabrication contract wins over completeness.
 
 ---
 
-## Step 2. Resolve original_intro (SPEC §5.4 — by RULE, never guessed)
+## Step 2. Resolve the test's origin (SPEC §5.4 — `test_origin` + `original_intro`)
 
-`original_intro` is per-ref, default `unknown`. Set it **only** here, by this rule:
+`test_origin` is entry-level (one originator per test); `original_intro` is the per-ref boolean that
+marks it when the originator is in `references[]`. Both are set **only** here — `/promote-refs` never
+touches them, `/add-test` only records `authored_from` + `attribution_claims[]`.
 
-- Among the **verified** refs that use this test, the **earliest publication** is
-  `original_intro: true` — **unless** a ref states it took the test from elsewhere, in which case
-  follow that stated attribution.
-- Every other using ref is `original_intro: false`.
-- **Never guess beyond this rule.** If you cannot order the refs by date (e.g. all unverified
-  offline), leave `unknown` and note it — do not invent a priority.
-- **Dedup-folded multi-preset entries** (several presets folded to one entry, per the top-of-file
-  dedup comment): "this test" means the **fold-level** test, so the single earliest verified using-ref
-  across all folded presets is `true`. Do not set `original_intro` per-preset.
-- **Date a ref by its actual publication, not its citekey year.** A citekey embedding a wrong year
-  (e.g. an arXiv-era preprint keyed to its arXiv-fetch year) does not change the ordering — use the
-  real publication date recorded during verification.
+**Definitions (verbatim, SPEC §5.4 rule 1).** A **using-ref** is a `references[]` entry with a
+`reference_results[]` row (it ran this test), plus `test_origin.authored_from`. A ref cited only as a
+`parameters[].source_ref`, or only as a mode `inputs.reference` of `kind: reference` (an empirical
+model / data source), is **not** a using-ref. **Publication year** = `verification.meta.year`, never a
+citekey year.
+
+**2a. Read what the using-refs *state* about provenance.** A bare citation is not a statement; "the
+vortex of [X]", "the test introduced by [X]", "we use the setup of [X]" is. Copy the sentence
+**verbatim** into `test_origin.attribution_claims[]` with `stated_by`. Never paraphrase.
+
+**2b. Chase a stated attribution to an identifier.**
+
+```bash
+.venv/bin/python scripts/cite_chain.py --citing <the stating ref's doi> --match <author surname>
+```
+
+This greps the citing work's publisher-deposited Crossref reference list and prints
+`DOI | author | year | title | journal`. Two honest no-answers: **no deposited reference list** (common
+for books) and **DOI-only rows** (AGU/Wiley deposit bare DOIs, so a surname cannot match — the script
+says how many). Neither means the citation is absent: fall back to `WebSearch`, or match a DOI fragment
+and confirm it with `verify_refs.py --lookup <doi>`. Never guess an identifier.
+
+**2c. Apply the rule, in precedence order.**
+
+1. **Stated attribution beats dates.** (a) The attributed work is already in `references[]` → it is
+   `original_intro: true`, `status: resolved-in-list`. (b) It is **not** in the list → chase it, and
+   once its identifier verifies, **add** it and set it `true`; this is the one sanctioned case of
+   add-refs adding a ref purely for provenance, and an unreadable originator correctly carries no
+   `reference_results` row. (c) The chase does not verify → **no** ref is `true`;
+   `status: resolved-external` + `external: {author, year, doi?}` recording what the claim says.
+2. **Otherwise the earliest using-ref** by `meta.year` is `true`; every other using-ref is `false`.
+3. **Unknown stays unknown.** Missing years, tied years, or an unfinished chase → **no**
+   `original_intro` anywhere, `status: pending` + a note. `pending` is a correct answer; a guess is not.
+4. **`provenance: synthesized` → `status: synthesized`** (optional `derived_from`), never any `true` —
+   a synthesized entry has no literature originator.
+5. At most **one** `true` per entry, and only on a verified key. For a **dedup-folded** multi-preset
+   entry "the test" is the fold-level test — one `true` across all folded presets, never per-preset.
+
+Beware near-misses: "similar to [X]" is **not** origination. Without a verbatim sentence in hand the
+honest result is `status: pending`.
+
+**2d. Write it.**
+
+```yaml
+test_origin:
+  status: resolved-in-list          # | resolved-external | pending | synthesized
+  ref: brio1988                     # required iff resolved-in-list; the original_intro: true key
+  authored_from: dematte2024        # the ref this entry was ingested from (set by /add-test)
+  external: { author: Balsara, year: 2004, doi: "10.1086/381377" }   # iff resolved-external
+  attribution_claims:
+    - stated_by: dematte2024
+      quote: "<verbatim sentence stating where the test came from>"
+```
+
+`validate.py` check 11 enforces this structurally (one `true`; `true` only on a verified key; no
+using-ref older than the `true` ref; no `true` under `resolved-external`/`synthesized`).
 
 ---
 
@@ -109,19 +157,21 @@ each ref found and *how* it validates the test.
 
 ## Step 4. Verify — online run verify_refs.py; offline emit pending_verification.md (SPEC §5.2)
 
-- **Online:** run `.venv/bin/python scripts/verify_refs.py`. The script is **report-only** — its
-  `--write` upgrade is deliberately not implemented (PyYAML would strip the authored inline comments,
-  D-012). So it prints `RESOLVED`/`UNRESOLVED` per identifier but does **not** move anything: **you
-  hand-edit** the frontmatter to move each `RESOLVED` ref `references_unverified[] -> references[]`
-  and stamp `verification.status: verified` + `source` (what resolved it) + `checked` (date). Re-run
-  the script after editing; a `verified` ref that prints `UNRESOLVED` **hard-fails** — fix or
-  downgrade it, never fake an identifier.
-- **Valid-but-bot-blocked identifier.** Some publishers (e.g. Wiley) return HTTP 403 to the script's
-  non-browser requests even for a valid DOI. If the identifier is corroborated (title/authors match a
-  retrieved source such as the arXiv abstract page), record a **resolvable** identifier — prefer the
-  arXiv id, which resolves 200 — as the `verified` identifier and note the blocked DOI in `source`.
-  Do **not** hard-fail or fabricate; do **not** stamp `verified` on an identifier that resolves
-  nowhere.
+- **Online:** run `.venv/bin/python scripts/verify_refs.py --meta`. The script is **report-only** — an
+  in-place `--write` upgrade is deliberately not implemented (PyYAML would strip the authored inline
+  comments, D-012). It prints `RESOLVED` / `UNRESOLVED` / `UNDECIDED` per identifier plus a
+  paste-ready `meta:` block, but does **not** move anything: **you hand-edit** the frontmatter to move
+  each `RESOLVED` ref `references_unverified[] -> references[]`, stamp `verification.status: verified`
+  + `source` (the printed detail) + `checked` (date), and **paste** the printed `meta:` block under
+  `verification:`. Never type `meta` by hand — check 10 compares it against the live resolution.
+  Re-run the script after editing; a `verified` ref that prints `UNRESOLVED` **hard-fails** — fix or
+  downgrade it, never fake an identifier. `UNDECIDED` means the network could not decide (timeout /
+  5xx): retry later, promote nothing.
+- **A DOI that does not resolve does not exist.** The resolver never contacts a publisher landing
+  page: DOIs go to Crossref, then DataCite, then the DOI Handle API, none of which bot-block or
+  captcha. A DOI that 404s on **all three** does not exist. Never substitute an arXiv id to make a DOI
+  "pass" — that records the wrong canonical identifier; when a ref has both, record **both** under
+  `identifier` (the resolver then reports the priority date as `meta.year`).
 - **Offline:** record every candidate ref as `status: unverified` in `references_unverified[]` with
   its claimed identifier extracted **verbatim** from the source (a claim, not proof). Emit
   `tests/<slug>/pending_verification.md` from `templates/pending_verification.template.md` (top-level):
@@ -158,8 +208,8 @@ any failure before finishing.
 Every verified ref has a `reference_result` with `method`/`resolution`/`amr` (provenance-only, never in
 the problem block) and quantitative `findings` **verbatim with units** — **except** a
 verified-but-unreadable ref, which correctly carries no `reference_result` plus a comment saying why;
-`original_intro` set by the
-§5.4 rule (or left `unknown` with a note, never guessed); no "compares with literature" anywhere;
+`test_origin` written with any attribution sentence quoted **verbatim**, and `original_intro` set by
+the §5.4 rule (or left unset with `status: pending`, never guessed); no "compares with literature" anywhere;
 online `verify_refs.py` ran (offline emitted `pending_verification.md` and zero `verified` entries);
 every retrievable `pending_extraction.md` row was written back with a `source_ref` (unretrievable rows
 left `needs-source`, never fabricated); `reindex.py` + `validate.py` pass.

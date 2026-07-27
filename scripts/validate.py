@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """validate.py — single source of truth for "not a mess" (SPEC §8.3).
 
-Runs the ten SPEC §8.3 checks across every tests/*/spec.md and the generated
+Runs the eleven SPEC §8.3 checks across every tests/*/spec.md and the generated
 INDEX.tsv. Exits non-zero on any error; warnings never fail the build.
 
     python3 scripts/validate.py [--offline]
@@ -188,6 +188,25 @@ def _identifier_present(ref: dict) -> bool:
     return bool(ident.get("doi") or ident.get("arxiv") or ident.get("url"))
 
 
+def _using_ref_keys(fm: dict) -> set[str]:
+    """SPEC §5.4 rule 1: a using-ref RAN this test — it has a `reference_results[]` row.
+
+    Plus `test_origin.authored_from` (the entry was written from it). A ref cited only as a
+    `parameters[].source_ref`, or only as a mode `inputs.reference` of `kind: reference`
+    (an empirical model / data source), did NOT run the test and is not a using-ref.
+    """
+    keys = {rr.get("key") for rr in fm.get("reference_results") or [] if isinstance(rr, dict)}
+    authored_from = (fm.get("test_origin") or {}).get("authored_from")
+    if authored_from:
+        keys.add(authored_from)
+    return {k for k in keys if k}
+
+
+def _meta_year(ref: dict):
+    year = ((ref.get("verification") or {}).get("meta") or {}).get("year")
+    return year if isinstance(year, int) else None
+
+
 def check_refs(fm: dict, rep: Report, where: str, offline: bool = False) -> None:
     verified_keys: set[str] = set()
     unverified_keys: set[str] = set()
@@ -204,6 +223,16 @@ def check_refs(fm: dict, rep: Report, where: str, offline: bool = False) -> None
         if not _identifier_present(ref):
             rep.err(where, 5, f"references[{key}] is verified but has no resolvable identifier "
                               f"(doi/arxiv/url) — SPEC §11.5")
+        # A using-ref carries the date §5.4 orders attribution by, and a doi/arxiv always has a
+        # metadata record to take it from. Not required for url-only or non-using refs, nor when
+        # only the Handle API resolved the DOI (existence without metadata — recorded in `source`).
+        ident = ver.get("identifier") or {}
+        handle_only = "handle api" in str(ver.get("source") or "").lower()
+        if key in _using_ref_keys(fm) and (ident.get("doi") or ident.get("arxiv")) \
+                and _meta_year(ref) is None and not handle_only:
+            rep.err(where, 5, f"references[{key}] is a using-ref with a doi/arxiv but no "
+                              f"verification.meta.year — paste it from "
+                              f"`verify_refs.py --meta` (SPEC §5.1, §5.4 rule 1)")
     for ref in fm.get("references_unverified") or []:
         if not isinstance(ref, dict):
             continue
@@ -413,27 +442,131 @@ def check_index(specs: list[S.SpecDoc], rep: Report) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Check 11 — test_origin / original_intro consistency (SPEC §5.4)
+# ---------------------------------------------------------------------------
+
+_ORIGIN_STATUSES = ("resolved-in-list", "resolved-external", "pending", "synthesized")
+
+
+def check_test_origin(fm: dict, rep: Report, where: str) -> None:
+    """Structural §5.4 enforcement. Entirely offline — no network, runs identically under --offline."""
+    refs = [r for r in fm.get("references") or [] if isinstance(r, dict)]
+    by_key = {r.get("key"): r for r in refs}
+    unverified_keys = {r.get("key") for r in fm.get("references_unverified") or []
+                       if isinstance(r, dict)}
+    flagged = [r for r in refs if r.get("original_intro") is True]
+    flagged_unverified = [k for k in unverified_keys
+                          if any((r.get("key") == k and r.get("original_intro") is True)
+                                 for r in fm.get("references_unverified") or []
+                                 if isinstance(r, dict))]
+    using = _using_ref_keys(fm)
+    origin = fm.get("test_origin") or {}
+    status = origin.get("status")
+
+    # 11a — one originator per test.
+    if len(flagged) > 1:
+        rep.err(where, 11, f"{len(flagged)} refs carry original_intro: true "
+                           f"({', '.join(str(r.get('key')) for r in flagged)}) — at most one per "
+                           f"entry (SPEC §5.4 rule 6)")
+    # 11b — never on a quarantined ref.
+    for k in flagged_unverified:
+        rep.err(where, 11, f"references_unverified[{k}] carries original_intro: true — the "
+                           f"originator must be a verified ref (SPEC §5.4 rule 6)")
+
+    true_key = flagged[0].get("key") if len(flagged) == 1 else None
+    true_year = _meta_year(flagged[0]) if len(flagged) == 1 else None
+
+    # 11c / 11c' — nobody who ran the test may predate the credited originator.
+    for k in sorted(using):
+        ref = by_key.get(k)
+        if ref is None:
+            continue                      # membership is check 7's job
+        year = _meta_year(ref)
+        if year is None:
+            # Only worth saying when a year would actually decide something: a lone using-ref
+            # (or one with nothing dated to compare against) has no ordering to get wrong.
+            if len(using) > 1 or true_year is not None:
+                rep.warn(where, 11, f"using-ref {k} has no verification.meta.year — §5.4 ordering "
+                                    f"is undecidable for it")
+            continue
+        if true_year is not None and k != true_key and year < true_year:
+            rep.err(where, 11, f"using-ref {k} (meta.year {year}) predates the original_intro ref "
+                               f"{true_key} (meta.year {true_year}) — SPEC §5.4 rule 3")
+    # No citekey-year-vs-meta.year check: a citekey is a legal opaque label, `meta.year` is the
+    # priority date, and the two disagree routinely (preprint year vs print issue). Reporting it
+    # produced a permanent, unactionable warning on every run — dropped rather than muted.
+
+    if status is not None and status not in _ORIGIN_STATUSES:
+        rep.err(where, 11, f"test_origin.status {status!r} not one of {'|'.join(_ORIGIN_STATUSES)}")
+    # 11e — resolved-in-list must name the flagged ref.
+    if status == "resolved-in-list":
+        ref_key = origin.get("ref")
+        if not ref_key:
+            rep.err(where, 11, "test_origin.status: resolved-in-list but no test_origin.ref")
+        elif ref_key not in by_key:
+            rep.err(where, 11, f"test_origin.ref '{ref_key}' is not in references[]")
+        elif ref_key != true_key:
+            rep.err(where, 11, f"test_origin.ref '{ref_key}' is not the original_intro: true ref "
+                               f"({true_key!r}) — SPEC §5.4")
+    # 11f — an external or synthesized origin credits no listed ref.
+    if status in ("resolved-external", "synthesized") and flagged:
+        rep.err(where, 11, f"test_origin.status: {status} but references[{true_key}] carries "
+                           f"original_intro: true (SPEC §5.4 rules 2c, 5)")
+    if fm.get("provenance") == "synthesized" and status not in (None, "synthesized"):
+        rep.err(where, 11, f"provenance: synthesized requires test_origin.status: synthesized "
+                           f"(got {status!r}) — SPEC §5.4 rule 5")
+    # 11g — an unresolved origin with using-refs present is work left undone, not a verdict.
+    if status in (None, "pending") and using:
+        rep.warn(where, 11, f"test_origin {'absent' if status is None else 'pending'} while "
+                            f"{len(using)} using-ref(s) exist — run /add-refs")
+
+
+# ---------------------------------------------------------------------------
 # Check 10 — verified-ref identifier resolvable (network; --offline downgrades)
 # ---------------------------------------------------------------------------
 
 
+def _norm_title(t: str) -> str:
+    """Case/space/punctuation-insensitive title compare (publishers vary on both)."""
+    return "".join(ch for ch in str(t).lower() if ch.isalnum())
+
+
 def check_network_refs(fm: dict, offline: bool, rep: Report, where: str) -> None:
+    if offline:
+        # One line for the whole run (emitted by the driver), not one per ref: "--offline skipped
+        # resolution" is the same fact 15 times over, and the per-ref list is not actionable.
+        return
     for ref in fm.get("references") or []:
         if not isinstance(ref, dict):
             continue
         ident = (ref.get("verification") or {}).get("identifier") or {}
         if not ident:
             continue
-        if offline:
-            rep.warn(where, 10, f"references[{ref.get('key')}] identifier not resolved (--offline)")
-            continue
         if verify_refs is None:
             rep.warn(where, 10, "verify_refs unavailable; skipping network resolution")
             return
-        ok, detail = verify_refs.resolve_identifier(ident)
-        if not ok:
-            rep.err(where, 10, f"references[{ref.get('key')}] verified but identifier "
-                               f"unresolvable: {detail}")
+        key = ref.get("key")
+        r = verify_refs.resolve(ident)
+        if r.state == "notfound":
+            rep.err(where, 10, f"references[{key}] verified but identifier does not exist: "
+                               f"{r.detail}")
+            continue
+        if r.state == "unreachable":
+            # A socket timeout / 5xx must never red the build — existence is undecided,
+            # not disproved (SPEC §8.3 check 10).
+            rep.warn(where, 10, f"references[{key}] identifier resolution undecided "
+                                f"(network): {r.detail}")
+            continue
+        # Stored `verification.meta` is resolver-derived by contract; the only mechanical
+        # detector of hand-typed metadata is comparing it against the live resolution.
+        stored = (ref.get("verification") or {}).get("meta") or {}
+        if stored.get("year") and r.meta.year and stored["year"] != r.meta.year:
+            rep.warn(where, 10, f"references[{key}] meta.year={stored['year']} but resolver "
+                                f"reports {r.meta.year} ({r.resolver})")
+        if stored.get("title") and r.meta.title and \
+                _norm_title(stored["title"]) != _norm_title(r.meta.title):
+            rep.warn(where, 10, f"references[{key}] meta.title differs from the resolved title "
+                                f"({r.resolver}): {r.meta.title!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -470,9 +603,12 @@ def main(argv=None) -> int:
         check_expressions(fm, rep, where)
         check_eos(fm, reg, rep, where)
         check_baseline(fm, rep, where)
+        check_test_origin(fm, rep, where)
         check_network_refs(fm, args.offline, rep, where)
 
     check_index(specs, rep)
+    if args.offline:
+        rep.warn("all specs", 10, "identifier resolution skipped (--offline); run online to enforce")
 
     for w in rep.warnings:
         print(f"WARN  {w}")

@@ -124,11 +124,20 @@ For a new-entry / new-sibling test:
    `needs-source` + `source_ref` + a `pending_extraction.md` row (never from memory).
 3. **validation-authoring** — build `validation_modes[]` + scores from the quantitative anchors found
    in Step 1. ≥1 mode or the entry is rejected (§11.6).
-4. **Refs via the verification path (§5).** Online: run `verify_refs.py`; a ref moves to `references[]`
-   only when verified. Offline: record `references_unverified[]` + emit `pending_verification.md`;
-   emit zero `verified` entries. Method/resolution/AMR go in `reference_results[]`, never the problem
+4. **Refs via the verification path (§5).** Online: run `verify_refs.py --meta`; a ref moves to
+   `references[]` only when verified, with the printed `meta:` block pasted under `verification:`
+   (never typed). Offline: record `references_unverified[]` + emit `pending_verification.md`; emit
+   zero `verified` entries. Method/resolution/AMR go in `reference_results[]`, never the problem
    block. (A reference-entangled application source: prefer two-phase — skeleton now, `/add-refs`
    later, per `triage.md` A8.)
+   **Record the attribution trail, do not resolve it (§5.4).** Set
+   `test_origin.authored_from: <the ref this entry was read from>`, and if the source states where the
+   test itself came from ("the vortex of [X]", "the test introduced by [X]"), copy that sentence
+   **VERBATIM** into `test_origin.attribution_claims[] {stated_by, quote}` — never paraphrase, never
+   chase the identifier here, and **never** set `original_intro` or `test_origin.status` to anything
+   but `pending`. `/add-refs` resolves it later; `status: pending` **is** the to-do marker (no extra
+   pending-artifact file). A sentence not recorded now is a sentence lost — the reader had the source
+   open, `/add-refs` may not.
 5. Then the serialized **one** `reindex.py` + **one** `validate.py` (`--offline` if offline).
 
 ---
@@ -150,5 +159,6 @@ tests were enumerated and the user picked (add-all only on explicit "all"); a ve
 block was built and every subagent returned `inherited_from_global[]` + `unresolved_references[]`;
 intra-paper dedup was resolved by the orchestrator; each chosen test was de-duped against INDEX
 (existing-entry pointed, not duplicated); new entries authored method-free with ≥1 scored mode and refs
-through the §5 verification path (zero fabricated citations); vocab proposals batched into one
+through the §5 verification path (zero fabricated citations); `test_origin.authored_from` +
+any verbatim `attribution_claims[]` recorded with `status: pending` and no `original_intro` set; vocab proposals batched into one
 hard-stop and schema gaps into one ledger; a single `reindex.py` + single `validate.py` pass.
