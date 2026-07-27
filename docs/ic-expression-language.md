@@ -34,7 +34,7 @@ The **only** callable names (SPEC §4). `validate.py` rejects any other identifi
 | `sin, cos, tan` | trigonometric |
 | `exp, log` | exponential / natural log |
 | `sqrt` | square root |
-| `tanh` | hyperbolic tangent |
+| `tanh, sinh, cosh` | hyperbolic tangent, sine, cosine |
 | `erf` | error function |
 | `abs` | absolute value |
 | `min, max` | element-wise/reducing min, max |

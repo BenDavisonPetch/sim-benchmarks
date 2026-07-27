@@ -166,7 +166,7 @@ CONSTANTS = {"pi"}
 FUNCTIONS: dict[str, int | None] = {
     "sin": 1, "cos": 1, "tan": 1,
     "exp": 1, "log": 1, "sqrt": 1,
-    "tanh": 1, "erf": 1, "abs": 1,
+    "tanh": 1, "sinh": 1, "cosh": 1, "erf": 1, "abs": 1,
     "min": None, "max": None,
     "J0": 1, "J1": 1, "Jn": 2,
     "step": 3,

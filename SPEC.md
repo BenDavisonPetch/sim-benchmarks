@@ -339,7 +339,7 @@ Documented once in `docs/ic-expression-language.md`; parsed/checked by `validate
 - **Variables:** `x, y, z, r, phi, theta` (coordinate-system aware) and `t` (time). `t` appears
   only in `domain_bc` state expressions and any explicitly time-dependent field; a steady problem
   never references `t`.
-- **Functions:** `sin, cos, tan, exp, log, sqrt, tanh, erf, abs, min, max, J0, J1, Jn(n,·)`,
+- **Functions:** `sin, cos, tan, exp, log, sqrt, tanh, sinh, cosh, erf, abs, min, max, J0, J1, Jn(n,·)`,
   `step(t, a, b)` (transition helper, defined once in docs), standard arithmetic, `pi`. Extendable
   via `docs/` + `validate.py` allow-list (logged change).
 - **Aux bindings:** ordered list, evaluated top-down; later expressions may reference earlier aux
