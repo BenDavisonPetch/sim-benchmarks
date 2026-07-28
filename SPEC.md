@@ -892,6 +892,28 @@ mechanically checkable.)
   interface coupling (never a bespoke BC). This is the fence between "represent it as coupled
   physics" and "genuine schema extension required." Schema *field* additions (as opposed to
   *vocabulary*, §7.2) are not self-healing and require re-grilling.
+- **TODO: `domain_bc` cannot express a per-variable-group face condition.** A face's `domain_bc`
+  entry carries exactly one `type` id applying to all variables (§3), but several physical
+  boundaries need two independent conditions on the SAME face simultaneously: a fluid-mechanical
+  condition on velocity (e.g. `dirichlet`/no-slip, a moving lid) and an electromagnetic condition
+  on the magnetic field (Dirichlet on the normal component, homogeneous Neumann on the tangential
+  component). Surfaced by `/add-test` ingest of `dematte2024`'s lid-driven-MHD-cavity tests
+  (`tests/lid-driven-cavity-mhd-visco-resistive`, `tests/all-mach-lid-driven-mhd-cavity`), both of
+  which currently record only the velocity condition structurally and push the EM half into prose
+  `## Notes` (not machine-checkable). Resolution direction (confirmed with user, 2026-07-28): this
+  composite condition IS exactly the registered `perfect-conductor` bc-type (`registry/bc-types/
+  perfect-conductor.md`) — Dirichlet on normal-B + homogeneous-Neumann on tangential-B is its
+  definition — but that registry entry is currently `requires_state: false` (hard-codes normal-B
+  to zero) and, more fundamentally, `domain_bc` has no shape to hold it *alongside* an independent
+  velocity condition on the same face. Two sub-changes needed: (a) generalize `perfect-conductor`
+  to accept an optional `state` for a non-zero stated normal-B (the cavity tests impose Bx=Bx0,
+  not Bx=0); (b) extend `domain_bc`'s per-face shape from a single `{type, state}` to something
+  that can carry a fluid-mechanical type and an EM type independently on one face (exact shape TBD
+  — candidates: a `{fluid: {type,state}, em: {type,state}}` split, or a `types: [...]` list). Not
+  self-healing (structural, not a missing id) — needs a design pass before implementing, since it
+  changes `SPEC.md` §3's schema, `validate.py`'s check 6/`bc_types_present`, and the
+  `spec.template.md`/`enumeration.worksheet.md` templates, and is repo-wide (affects how every
+  future BC-bearing entry is authored).
 - **TODO: `related_to` auto-linking for capability siblings.** When a capability-presence fork
   spawns sibling entries (steady vs `time_dependent_bc`; with vs without a term; internal-boundary
   present vs absent; interchangeable-vs-forked solid-phase base), `/add-test` and `/create-test`
