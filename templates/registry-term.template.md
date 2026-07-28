@@ -5,13 +5,16 @@
 # Delete every comment line before committing the filled file.
 id: <kebab-case-id>                 # == filename, kebab-case, physical descriptor only (never a method)
 human_name: "<Human Readable Name>"
-kind: <equation|term|eos|bc-type|coord-system|internal-boundary|analysis-treatment|geometry-stress>
+kind: <equation|term|eos|bc-type|coord-system|internal-boundary|analysis-treatment|geometry-stress
+#      |wall-pressure-treatment>
 # --- kind-specific frontmatter (keep only what applies; mirror a sibling file in the same dir) ---
 # equations:            phase: <fluid|solid>, requires_eos: <true|false>, velocity: <evolved|fixed-zero>,
 #                       evolves: [<...>], interchangeable_with: [<ids>], interchangeable_when: "<predicate|null>"
 # terms:                param_bearing: <true|false>, coefficient: <name>, applies_to: [<equation ids>]
 # eos:                  params: [<param names>]
-# bc-types:             requires_state: <true|false>, physical: true
+# bc-types:             requires_state: <true|false|optional>, physical: true,
+#                       state_keys: [<allowed state keys>]   # composite bc-types only; check 2
+# wall-pressure-treatment: (no extra keys)   # what a REFERENCE did at a conducting wall (§5.3)
 # coord-systems:        variables: [<...>], axis_singularity: <true|false>
 # internal-boundary:    physical: true            # PHYSICAL couplings ONLY, never a numerical method
 # analysis-treatment:   (no extra keys)

@@ -63,7 +63,8 @@ Golden rule for EVERY line: PHYSICAL statement only. No method / resolution / AM
 ## Boundary conditions (physical)
 
 - [ ] `domain_bc`  (R) — per face {type (registry/bc-types id), state?}. A face whose state
-      references t ⇒ time_dependent_bc=true. → ...
+      references t ⇒ time_dependent_bc=true. Multi-variable-group face ⇒ ONE composite id
+      (conducting wall = perfect-conductor, state { vx, vy, vz, Bn }). → ...
 - [ ] `internal_boundaries`  (R, may be []) — physical kinds + geometry + motion; no method. → [____]
 
 ## Time

@@ -136,6 +136,7 @@ reference_results:
     method: "ideal MHD; moving-polyline embedded boundary (Sect. 3.1/4.1), reflecting perfect-conductor wall, velocity = v_r=-r/a"
     resolution: "128^2 Cartesian mesh (initial resolution ~51.2 cells across the cylinder radius)"
     amr: "none"
+    wall_pressure_bc: not-stated   # "the cylindrical boundary is a reflecting [wall]"; no pressure condition given
     findings: "Central density/pressure trace the adiabat closely (Fig. 11c); total mass and Bz flux inside the compressing boundary show small, closely-tracking relative conservation errors (Fig. 11d)."
 related_to: [parallel-pinch-compression-embedded-boundary]
 headline_score: 3

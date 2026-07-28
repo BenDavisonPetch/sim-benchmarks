@@ -262,6 +262,11 @@ parameters:                                # values only; never identity (except
   # - { name: dipole_eq_nT, canonical: 195, meaning: "...", source_ref: anderson2011 }
 
 domain_bc:                                 # PER FACE. {type, state}. registry/bc-types ids.
+  # One `type` per face. A face that is physically several conditions at once (a conducting
+  # wall: velocity + normal-B + tangential-B + rho/p) is ONE composite registry id, not a
+  # per-variable split — see registry/bc-types/perfect-conductor.md. A bc-type may declare
+  # `state_keys` in its registry frontmatter, restricting which state keys it accepts
+  # (validate.py check 2).
   x_lo: { type: periodic }
   x_hi: { type: periodic }
   y_lo: { type: periodic }
@@ -427,6 +432,13 @@ reference_results:
     method: "second-order Godunov, unstaggered CT"   # provenance ONLY (never in problem block)
     resolution: "1000x1000"
     amr: "none"
+    wall_pressure_bc: not-stated   # registry/wall-pressure-treatments id. REQUIRED on every row
+                                   # of an entry posing a perfectly-conducting wall (a
+                                   # `perfect-conductor` face or a `perfect-conductor-wall`
+                                   # internal boundary), where the physical condition is force
+                                   # balance n.grad p = n.(JxB) but references routinely
+                                   # substitute the naive n.grad p = 0. `not-stated` when the
+                                   # source is silent — never inferred. validate.py check 12.
     findings: >
       Specific, quantitative where reported. Numbers verbatim WITH UNITS
       (orders, jump sizes, growth rates, resolution thresholds, timings).
@@ -564,13 +576,25 @@ registry/
                             #   symmetry, electromagnetic-coupling   (physical, never methods)
   analysis-treatments/  # none, oblique-to-grid, axis-singularity, multi-material-interface, ...
   geometry-stress/      # ids for adversarial/stress geometries (searchable tag, §2.3 exception)
+  wall-pressure-treatments/  # force-balance, homogeneous-neumann, not-stated — the pressure
+                             #   condition a REFERENCE used at a conducting wall (§5.3)
   procedures/           # §6.1
 ```
 One markdown file per entry: `{ id, human name, definition, params-schema, notes, refs }`.
 Readable, diffable, single-file edits for a Sonnet-class model. Entries may additionally carry
 structured machine-readable frontmatter keys (a superset the scripts consume — e.g. `requires_eos`,
 `interchangeable_with`/`interchangeable_when`, a term's `coefficient`/`applies_to`, a bc-type's
-`requires_state`); the mandated fields and body sections are unchanged.
+`requires_state` (`true|false|optional`) and `state_keys`); the mandated fields and body sections
+are unchanged.
+
+**Composite bc-types.** A face carries exactly one `type`. A physical boundary that constrains
+several variable groups at once is therefore **one composite id** covering all of them, not a
+per-variable face shape: `perfect-conductor` states the velocity (wall velocity; no-slip when
+`viscosity` is present, impermeability otherwise), magnetic (Dirichlet normal `Bn`, homogeneous
+Neumann tangential), density (homogeneous Neumann) and pressure (force balance `n·∇p = n·(J×B)`)
+conditions of a rigid conducting wall, with an optional `state` supplying a moving wall's velocity
+and a non-zero `Bn`. A reference's *deviation* from the composite's pressure condition is provenance
+and lives in `reference_results[].wall_pressure_bc` (§5.3), never in the problem block.
 
 **`base` semantics.** Fluid phase: `hydro` with no terms = Euler; `hydro` + `viscosity`
 (+`heat-conduction`) = Navier–Stokes; `mhd` with no terms = ideal MHD; `mhd` + `resistivity` =
@@ -637,7 +661,8 @@ the INDEX carries the reindex-computed flag values).
 ### 8.3 `scripts/validate.py` (single source of truth for "not a mess")
 Checks:
 1. Every `spec.md` parses; all required fields present.
-2. Every registry id used exists in the registry.
+2. Every registry id used exists in the registry; a bc-type declaring `state_keys` accepts no
+   other `state` key.
 3. Each mode `score` ∈ 1..5; `headline_score == max(modes)`.
 4. `INDEX.tsv` in sync (regenerate in-memory, diff, fail on drift), including capability flags.
 5. Ref rules: trusted `references[]` all `verified`; `verified` ⇒ resolvable identifier present;
@@ -676,6 +701,9 @@ Checks:
     differ routinely (preprint vs print issue), so the check could only ever emit an unactionable
     permanent warning. Every check here is either actionable or silent — `--offline` reports one
     skipped-resolution line for the whole run, not one per ref.
+12. Every `reference_results` row of an entry posing a perfectly-conducting wall (a
+    `perfect-conductor` domain face or a `perfect-conductor-wall` internal boundary) declares
+    `wall_pressure_bc` (§5.3). Structural; runs under `--offline`.
 
 ### 8.4 `scripts/verify_refs.py`
 §5.2A. Report-only (gates + reports RESOLVED / UNRESOLVED / UNDECIDED; hard-fails a `verified` ref
@@ -814,6 +842,7 @@ registry/
   internal-boundary-kinds/*.md
   analysis-treatments/*.md
   geometry-stress/*.md
+  wall-pressure-treatments/*.md
   procedures/*.md
 tests/
   <slug>/
@@ -892,28 +921,6 @@ mechanically checkable.)
   interface coupling (never a bespoke BC). This is the fence between "represent it as coupled
   physics" and "genuine schema extension required." Schema *field* additions (as opposed to
   *vocabulary*, §7.2) are not self-healing and require re-grilling.
-- **TODO: `domain_bc` cannot express a per-variable-group face condition.** A face's `domain_bc`
-  entry carries exactly one `type` id applying to all variables (§3), but several physical
-  boundaries need two independent conditions on the SAME face simultaneously: a fluid-mechanical
-  condition on velocity (e.g. `dirichlet`/no-slip, a moving lid) and an electromagnetic condition
-  on the magnetic field (Dirichlet on the normal component, homogeneous Neumann on the tangential
-  component). Surfaced by `/add-test` ingest of `dematte2024`'s lid-driven-MHD-cavity tests
-  (`tests/lid-driven-cavity-mhd-visco-resistive`, `tests/all-mach-lid-driven-mhd-cavity`), both of
-  which currently record only the velocity condition structurally and push the EM half into prose
-  `## Notes` (not machine-checkable). Resolution direction (confirmed with user, 2026-07-28): this
-  composite condition IS exactly the registered `perfect-conductor` bc-type (`registry/bc-types/
-  perfect-conductor.md`) — Dirichlet on normal-B + homogeneous-Neumann on tangential-B is its
-  definition — but that registry entry is currently `requires_state: false` (hard-codes normal-B
-  to zero) and, more fundamentally, `domain_bc` has no shape to hold it *alongside* an independent
-  velocity condition on the same face. Two sub-changes needed: (a) generalize `perfect-conductor`
-  to accept an optional `state` for a non-zero stated normal-B (the cavity tests impose Bx=Bx0,
-  not Bx=0); (b) extend `domain_bc`'s per-face shape from a single `{type, state}` to something
-  that can carry a fluid-mechanical type and an EM type independently on one face (exact shape TBD
-  — candidates: a `{fluid: {type,state}, em: {type,state}}` split, or a `types: [...]` list). Not
-  self-healing (structural, not a missing id) — needs a design pass before implementing, since it
-  changes `SPEC.md` §3's schema, `validate.py`'s check 6/`bc_types_present`, and the
-  `spec.template.md`/`enumeration.worksheet.md` templates, and is repo-wide (affects how every
-  future BC-bearing entry is authored).
 - **TODO: `related_to` auto-linking for capability siblings.** When a capability-presence fork
   spawns sibling entries (steady vs `time_dependent_bc`; with vs without a term; internal-boundary
   present vs absent; interchangeable-vs-forked solid-phase base), `/add-test` and `/create-test`

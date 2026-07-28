@@ -100,7 +100,13 @@ Each face key (`x_lo, x_hi, y_lo, y_hi`, plus `z_lo, z_hi` in 3D) maps to `{type
 | Field | R/O | Type | Notes |
 |---|---|---|---|
 | `domain_bc.<face>.type` | R | registry id | `registry/bc-types/<id>`. |
-| `domain_bc.<face>.state` | O | map | `{var: expr}` IC-expression-language expressions (may reference `x,y,z,t`). Any face whose state references `t` sets `capability_flags.time_dependent_bc = true` (SPEC §2.3, `validate.py` check 6). |
+| `domain_bc.<face>.state` | O | map | `{var: expr}` IC-expression-language expressions (may reference `x,y,z,t`). Any face whose state references `t` sets `capability_flags.time_dependent_bc = true` (SPEC §2.3, `validate.py` check 6). A bc-type declaring `state_keys` accepts only those keys (check 2). |
+
+One `type` per face: a boundary constraining several variable groups at once is a single
+**composite** bc-type, not a per-variable face shape (SPEC §7.1). A rigid conducting wall — velocity
++ normal/tangential B + density + pressure — is `perfect-conductor`, whose optional `state` carries
+a moving wall's velocity (`vx, vy, vz`) and a non-zero normal field (`Bn`); see
+`registry/bc-types/perfect-conductor.md`.
 
 ### 1.10 `internal_boundaries`
 
@@ -145,7 +151,7 @@ unscored provenance metrics (SPEC §6.4).
 | `references` | R | list | Verified refs only (`status: verified`, SPEC §5.1). `[]` allowed. Each carries `verification{status, identifier, source, checked, meta?}`. `meta{year, first_author, container, title}` is **resolver output pasted from `verify_refs.py --meta`, never typed** — `meta.year` (the priority date over a doi+arxiv pair) is what SPEC §5.4 orders attribution by; check 5 requires it on a using-ref with a doi/arxiv, check 10 warns when it disagrees with the live resolution. See §5 rules and `conventions.md`. |
 | `references_unverified` | R | list | Quarantined refs (`unverified`/`user-supplied`); excluded from INDEX and generated paper sections. `[]` allowed. |
 | `test_origin` | O | map | Entry-level attribution (SPEC §5.4): `{status: resolved-in-list\|resolved-external\|pending\|synthesized, ref?, authored_from?, external?, derived_from?, attribution_claims[]{stated_by, quote}}`. `/add-test` fills `authored_from` + verbatim `attribution_claims[]`; only `/add-refs` resolves `status`/`ref`/`external`; `/promote-refs` never touches it. `validate.py` check 11. |
-| `reference_results` | R | list | What a specific ref *did* (SPEC §5.3). `[]` allowed. `key` must be in `references[]`. Fields: `key, params_used, method, resolution, amr, findings, figure_asset?`. Method/resolution/amr are provenance-only — never in the problem block (`validate.py` check 7). |
+| `reference_results` | R | list | What a specific ref *did* (SPEC §5.3). `[]` allowed. `key` must be in `references[]`. Fields: `key, params_used, method, resolution, amr, findings, figure_asset?, wall_pressure_bc?`. Method/resolution/amr are provenance-only — never in the problem block (`validate.py` check 7). `wall_pressure_bc` (a `registry/wall-pressure-treatments/` id) is **required** on every row of an entry posing a perfectly-conducting wall — a `perfect-conductor` face or a `perfect-conductor-wall` internal boundary (`validate.py` check 12); `not-stated` when the source is silent. |
 | `related_to` | R | list[slug] | Sibling slugs (same physics, different treatments/capabilities). `[]` allowed. |
 | `headline_score` | R | int | `= max(validation_modes[].score)`; **set by `reindex.py`** (SPEC §8.2, §11.8). Hand value must equal the recomputed max or `validate.py` check 3 fails. |
 

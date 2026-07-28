@@ -230,8 +230,10 @@ qualitative description alone raise the score above what the checkable content s
   `tests/lid-driven-cavity-mhd-visco-resistive` (which has resistivity present).
 - Units are stored as authored (bare, nondimensional numbers); b_field_convention
   (permeability-unity) is a global, paper-wide statement (Sect. 2), not a needs-source item.
-- Schema note: as in the visco-resistive lid-cavity sibling test, `domain_bc` here records
-  only the velocity Dirichlet condition per face; the source gives no explicit B-field or
-  density/pressure boundary statement for this specific test (Sect 4.4 does not restate the
-  perfectly-conducting-wall / homogeneous-Neumann convention used in Sect 4.3.3), so none is
-  inferred here by analogy.
+- BC note: `domain_bc` records the velocity Dirichlet condition only. Sect 4.4 gives no B-field
+  or density/pressure boundary statement for this test and does not restate the
+  perfectly-conducting-wall / homogeneous-Neumann convention of Sect 4.3.3, so the composite
+  `perfect-conductor` face type used by the sibling entry
+  (`tests/lid-driven-cavity-mhd-visco-resistive`) is NOT inferred here by analogy. If a re-read
+  settles the wall condition, switch these faces to `perfect-conductor` and add
+  `wall_pressure_bc` to the reference_results rows.

@@ -172,6 +172,7 @@ reference_results:
     method: "ideal MHD; moving-polyline embedded boundary, reflecting perfect-conductor wall, velocity = v_r=-r/a; same 128^2 mesh as the theta-pinch sibling"
     resolution: "128^2 Cartesian mesh"
     amr: "none"
+    wall_pressure_bc: not-stated   # "the cylindrical boundary is a reflecting [wall]"; no pressure condition given
     findings: "Central density/pressure trace the adiabat (Fig. 12d); mass and Bz-flux conservation errors are similar early but diverge and become non-monotonic later (Fig. 12e); a new in-plane (Bphi) flux conservation error is present, absent in the theta-pinch sibling."
 related_to: [theta-pinch-compression-embedded-boundary, standing-magnetosonic-wave-parallel-pinch-cylinder]
 headline_score: 3

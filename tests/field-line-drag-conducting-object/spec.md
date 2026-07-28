@@ -158,6 +158,7 @@ reference_results:
     method: "ideal MHD; static-polyline embedded perfect-conductor boundary, tangential-E=0 enforcement (Sect. 4.1); staggered constrained transport; HLLD Riemann solver; 32x64 Cartesian mesh (body text) or possibly a cropped 32x32 view (Fig. 5 caption, see Notes); three boundary shapes (circle; rounded square rotated pi/2 and pi/16 rad) at a range of resolutions"
     resolution: "32x64 cells (body text); Fig. 5 caption states '32x32 cells' for the domain shown -- discrepancy recorded verbatim, not resolved"
     amr: "none"
+    wall_pressure_bc: not-stated   # Sect. 7.4 gives no pressure condition at the embedded conductor
     findings: "Field wraps around all three obstacle shapes without net penetration in the active mesh; same qualitative behavior across a range of resolutions (Fig. 5, t=0.8 s)."
 related_to: [theta-pinch-compression-embedded-boundary, parallel-pinch-compression-embedded-boundary]
 headline_score: 3

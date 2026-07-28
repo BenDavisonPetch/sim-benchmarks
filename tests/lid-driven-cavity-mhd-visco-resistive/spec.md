@@ -78,15 +78,14 @@ domain_bc:
   # u=(u_Lid(x),0) on the top wall with u_Lid = tanh(beta_hat*(0.5-x)) + tanh(beta_hat*(0.5+x)) - 1.0.
   # Homogeneous Neumann on rho, p everywhere. Perfectly-conducting walls: normal B fixed
   # (Bx=Bx0 on x_lo/x_hi, By=0 on y_lo/y_hi) PLUS homogeneous Neumann on the tangential B
-  # component at each face (dBx/dy=0 on y_lo/y_hi; dBy/dx=0 on x_lo/x_hi) -- see Notes for the
-  # schema gap this creates (one `type` per face cannot hold both the Dirichlet normal-B/velocity
-  # condition and the Neumann tangential-B condition simultaneously; the Dirichlet condition is
-  # recorded structurally below as the identity-bearing part, the Neumann companion condition is
-  # recorded in prose only).
-  x_lo: { type: dirichlet, state: { vx: "0.0", vy: "0.0", Bx: "Bx0" } }
-  x_hi: { type: dirichlet, state: { vx: "0.0", vy: "0.0", Bx: "Bx0" } }
-  y_lo: { type: dirichlet, state: { vx: "0.0", vy: "0.0", By: "0.0" } }
-  y_hi: { type: dirichlet, state: { vx: "tanh(beta_hat*(0.5-x)) + tanh(beta_hat*(0.5+x)) - 1.0", vy: "0.0", By: "0.0" } }
+  # component at each face (dBx/dy=0 on y_lo/y_hi; dBy/dx=0 on x_lo/x_hi) -- i.e. exactly the
+  # composite `perfect-conductor` face condition, whose Bn state carries the stated normal field.
+  # The source's pressure treatment (homogeneous Neumann, not the force balance this bc-type
+  # asserts) is a method choice, recorded per row in reference_results[].wall_pressure_bc.
+  x_lo: { type: perfect-conductor, state: { vx: "0.0", vy: "0.0", Bn: "Bx0" } }
+  x_hi: { type: perfect-conductor, state: { vx: "0.0", vy: "0.0", Bn: "Bx0" } }
+  y_lo: { type: perfect-conductor, state: { vx: "0.0", vy: "0.0", Bn: "0.0" } }
+  y_hi: { type: perfect-conductor, state: { vx: "tanh(beta_hat*(0.5-x)) + tanh(beta_hat*(0.5+x)) - 1.0", vy: "0.0", Bn: "0.0" } }
 
 internal_boundaries: []
 
@@ -142,9 +141,10 @@ test_origin:
 reference_results:
   - key: dematte2024
     params_used: { Bx0: 0.5, resolution_grid: "512x512", CFL: 0.4, t_final: 20.0 }
-    method: "proposed semi-implicit finite volume scheme; second-order-accurate MUSCL-Hancock-type TVD reconstruction for the explicit advective terms; implicit treatment of visco-resistive terms; time step chosen according to the velocity (CFL=0.4), not the fast magnetosonic speed"
+    method: "tangential-B wall closure: homogeneous Neumann (dBx/dy=0 on y_lo/y_hi, dBy/dx=0 on x_lo/x_hi); proposed semi-implicit finite volume scheme; second-order-accurate MUSCL-Hancock-type TVD reconstruction for the explicit advective terms; implicit treatment of visco-resistive terms; time step chosen according to the velocity (CFL=0.4), not the fast magnetosonic speed"
     resolution: "512x512 uniform Cartesian cells"
     amr: "none"
+    wall_pressure_bc: homogeneous-neumann   # "homogeneous Neumann boundary condition applied everywhere for the density and pressure"
     findings: >
       Streamlines of velocity and magnetic field at t=20 (steady state) shown in Fig 17 for
       Bx0=0.5. 1D slices of Bx, By along the x- and y-axes (Fig 18) for both Bx0=0.5 and
@@ -154,6 +154,7 @@ reference_results:
     method: "same as Bx0=0.5 entry above"
     resolution: "512x512 uniform Cartesian cells"
     amr: "none"
+    wall_pressure_bc: homogeneous-neumann
     findings: "1D Bx, By slices (Fig 18) show very good agreement with the Fambri et al. reference solution for this Bx0 value also."
 related_to: []
 headline_score: 3
@@ -197,16 +198,13 @@ result comparison, no exact solution, no stated numeric tolerance).
   eta/mu numbers. Do NOT borrow eta=mu=1e-3 (the Kelvin-Helmholtz test, Sect 4.3.2) or
   eta=mu=0.1 (the shear-layer/current-sheet test, Sect 4.3.1) by analogy; both are recorded
   here as `needs-source` (see pending_extraction.md).
-- Schema gap: `domain_bc` allows one `type` per face, but this test's magnetic-field wall
-  condition is physically mixed per face — a Dirichlet condition on the normal B component
-  (Bx=Bx0 on x_lo/x_hi, By=0 on y_lo/y_hi) AND a homogeneous-Neumann condition on the
-  tangential B component on the SAME face (dBx/dy=0 on y_lo/y_hi; dBy/dx=0 on x_lo/x_hi),
-  simultaneously with the velocity Dirichlet condition. The structural `domain_bc` block
-  above records the Dirichlet (normal-B + velocity) half only; the Neumann tangential-B
-  companion condition is documented here in prose, not structurally encoded.
-- Density and pressure carry homogeneous Neumann boundary conditions on every face (source:
-  "homogeneous Neumann boundary condition applied everywhere for the density and pressure");
-  also not structurally encoded for the same one-type-per-face reason.
+- The source imposes homogeneous Neumann on density and pressure at every wall (verbatim:
+  "homogeneous Neumann boundary condition applied everywhere for the density and pressure").
+  For pressure that is the naive approximation of the `perfect-conductor` force-balance
+  condition, recorded per row as `wall_pressure_bc: homogeneous-neumann`. With `Bx0` normal to
+  the x-walls and the resistive layer next to them, `n·(J×B)` need not vanish there, so the two
+  conditions are not equivalent for this test — expect a near-wall pressure difference against
+  any code that applies force balance.
 - The source states the simulation time step is chosen according to the velocity (CFL=0.4),
   overriding the paper's global default (CFL=0.8, advective-eigenvalue time stepping already
   matches the global default in kind but the CFL number itself is overridden) — this is a

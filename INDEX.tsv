@@ -10,7 +10,7 @@ ideal-mhd-riemann-problem	mhd/gamma-law		1	none	outflow	none	false	false	false	4
 ideal-mhd-rotor	mhd/gamma-law		2	none	outflow	none	false	false	false	3	false
 kelvin-helmholtz-instability-ideal-mhd	mhd/gamma-law		2	none	periodic	none	false	false	false	3	false
 kelvin-helmholtz-instability-vrmhd	mhd(resistivity|viscosity)/gamma-law	resistivity|viscosity	2	none	periodic	none	false	false	false	3	false
-lid-driven-cavity-mhd-visco-resistive	mhd(resistivity|viscosity)/gamma-law	resistivity|viscosity	2	none	dirichlet	none	false	false	false	3	false
+lid-driven-cavity-mhd-visco-resistive	mhd(resistivity|viscosity)/gamma-law	resistivity|viscosity	2	none	perfect-conductor	none	false	false	false	3	false
 magnetic-compression-zpinch-material-interface	mhd(resistivity)/gamma-law+mhd(resistivity)/gamma-law@material-contact	resistivity	2	multi-material-interface	neumann	material-contact	true	false	true	2	false
 mercury-magnetosphere-coupled-interior	magnetic-diffusion(resistivity)+mhd/gamma-law@electromagnetic-coupling	resistivity	3	none	outflow|supersonic-inflow	electromagnetic-coupling	true	true	true	3	false
 mhd-current-sheet	mhd(heat-conduction|resistivity|viscosity)/gamma-law	heat-conduction|resistivity|viscosity	1|2	none	outflow|periodic	none	false	false	false	4	true

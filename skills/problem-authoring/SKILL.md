@@ -137,6 +137,11 @@ a cited reference is recorded with `canonical: null`, `notes: needs-source` (or 
   expressions (may reference `x,y,z,t`). Any face whose `state` references `t` ⇒
   `capability_flags.time_dependent_bc = true` (check 6). Step vs ramp vs sinusoid ⇒ **same entry**
   (the BC-state expression is a value, §2.3); steady vs driven ⇒ **different entries**, linked.
+- A face constraining several variable groups at once is **one composite bc-type**, never a
+  per-variable split: a rigid perfectly-conducting wall (velocity + normal/tangential B + rho/p) is
+  `perfect-conductor`, optional `state: { vx, vy, vz, Bn }` for a moving wall / non-zero normal
+  field. Its pressure condition is force balance `n·∇p = n·(J×B)`; a reference that used the naive
+  `n·∇p = 0` instead records that in `reference_results[].wall_pressure_bc`, not here.
 - `internal_boundaries` — physical only (`material-contact`, `free-surface`, `rigid-wall`,
   `perfect-conductor-wall`, `symmetry`, `electromagnetic-coupling`) + geometry + motion. **No
   numerical method.** Often empty when the interface is already carried by `physics.coupling`.

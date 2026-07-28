@@ -66,6 +66,10 @@ domain_bc: { }                       # R; PER FACE {type, state?}. registry/bc-t
   # x_hi: { type: supersonic-inflow, state: { rho: "40 + 40*step(t,0,30)", vx: "..." } }
   #   a face whose state references t sets capability_flags.time_dependent_bc = true
   # 3D adds z_lo, z_hi
+  # ONE type per face. A face that is physically several conditions at once is a COMPOSITE
+  # registry id, not a per-variable split: a rigid conducting wall (velocity + normal/tangential
+  # B + rho/p) is `perfect-conductor`, optional state { vx, vy, vz, Bn }:
+  # y_hi: { type: perfect-conductor, state: { vx: "<moving-lid velocity>", Bn: "0" } }
 
 internal_boundaries: []              # R (may be []); physical only (§1.6). Each: kind + geometry + motion.
 
@@ -113,6 +117,16 @@ references_unverified: []            # R (may be []); quarantined (unverified | 
 #     - stated_by: <citekey>
 #       quote: "<VERBATIM sentence stating where the test came from>"
 reference_results: []                # R (may be []); what a specific ref DID (§5.3); key in references[]
+  # - key: <refkey>
+  #   params_used: { }
+  #   method: "<numerical method>"   # provenance only, never the problem block
+  #   resolution: "<NxM>"
+  #   amr: "<none|...>"
+  #   findings: >
+  #     <specific + quantitative, verbatim WITH UNITS>
+  #   wall_pressure_bc: not-stated   # registry/wall-pressure-treatments id. REQUIRED when the
+  #                                  # entry poses a perfectly-conducting wall (check 12):
+  #                                  # force-balance | homogeneous-neumann | not-stated
 related_to: []                       # R (may be []); sibling slugs (§2.3 forks)
 headline_score: 0                    # R; = max(validation_modes[].score); set by reindex.py (§8.2)
 ---

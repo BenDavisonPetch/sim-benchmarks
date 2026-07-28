@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """validate.py — single source of truth for "not a mess" (SPEC §8.3).
 
-Runs the eleven SPEC §8.3 checks across every tests/*/spec.md and the generated
+Runs the twelve SPEC §8.3 checks across every tests/*/spec.md and the generated
 INDEX.tsv. Exits non-zero on any error; warnings never fail the build.
 
     python3 scripts/validate.py [--offline]
@@ -150,6 +150,20 @@ def check_registry_ids(fm: dict, reg: S.Registry, rep: Report, where: str) -> No
     for face, spec in (fm.get("domain_bc") or {}).items():
         if isinstance(spec, dict):
             need("bc-types", spec.get("type"), f"domain_bc.{face}.type")
+            # A bc-type that declares state_keys (a composite condition, e.g.
+            # perfect-conductor) accepts only those keys — a stray key is a silently
+            # ignored physical statement otherwise.
+            allowed = reg.bc_state_keys.get(spec.get("type"))
+            if allowed is not None:
+                for k in (spec.get("state") or {}):
+                    if k not in allowed:
+                        rep.err(where, 2, f"domain_bc.{face}.state.{k}: bc-type "
+                                          f"'{spec['type']}' accepts only "
+                                          f"{sorted(allowed)}")
+    for rr in fm.get("reference_results") or []:
+        if isinstance(rr, dict):
+            need("wall-pressure-treatments", rr.get("wall_pressure_bc"),
+                 f"reference_results[{rr.get('key')}].wall_pressure_bc")
     for ib in fm.get("internal_boundaries") or []:
         kind = ib.get("kind") if isinstance(ib, dict) else ib
         need("internal-boundary-kinds", kind, "internal_boundaries[].kind")
@@ -522,6 +536,26 @@ def check_test_origin(fm: dict, rep: Report, where: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Check 12 — wall_pressure_bc declared on conducting-wall entries (SPEC §5.3)
+# ---------------------------------------------------------------------------
+
+
+def check_wall_pressure_bc(fm: dict, rep: Report, where: str) -> None:
+    """At a perfectly-conducting wall the physical pressure condition is force balance
+    (`registry/bc-types/perfect-conductor.md`); references routinely substitute the naive
+    homogeneous-Neumann approximation, which changes the near-wall solution. Every
+    reference_results row on such an entry must say which it used — `not-stated` when the
+    source is silent, so silence is recorded rather than assumed."""
+    if not S.has_conducting_wall(fm):
+        return
+    for rr in fm.get("reference_results") or []:
+        if isinstance(rr, dict) and not rr.get("wall_pressure_bc"):
+            rep.err(where, 12, f"reference_results[{rr.get('key')}] missing wall_pressure_bc — "
+                               f"the entry poses a perfectly-conducting wall (SPEC §5.3); use "
+                               f"'not-stated' if the source does not say")
+
+
+# ---------------------------------------------------------------------------
 # Check 10 — verified-ref identifier resolvable (network; --offline downgrades)
 # ---------------------------------------------------------------------------
 
@@ -604,6 +638,7 @@ def main(argv=None) -> int:
         check_eos(fm, reg, rep, where)
         check_baseline(fm, rep, where)
         check_test_origin(fm, rep, where)
+        check_wall_pressure_bc(fm, rep, where)
         check_network_refs(fm, args.offline, rep, where)
 
     check_index(specs, rep)

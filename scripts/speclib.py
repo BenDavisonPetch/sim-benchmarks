@@ -39,8 +39,15 @@ REGISTRY_KINDS = [
     "internal-boundary-kinds",
     "analysis-treatments",
     "geometry-stress",
+    "wall-pressure-treatments",
     "procedures",
 ]
+
+# bc-type ids whose face condition is a conducting wall, and the internal-boundary kind
+# that is their interior analogue. Either one makes an entry's reference_results owe a
+# `wall_pressure_bc` declaration (SPEC §5.3, validate.py check 12).
+CONDUCTING_WALL_BC_TYPES = {"perfect-conductor"}
+CONDUCTING_WALL_IB_KINDS = {"perfect-conductor-wall"}
 
 # INDEX.tsv columns — the filterable subset only (SPEC §8.1). Order is authoritative:
 # reindex.py writes and validate.py regenerates through the SAME serializer below, so
@@ -127,6 +134,9 @@ class Registry:
     ids: dict[str, set[str]] = field(default_factory=dict)
     # equation id -> requires_eos bool (SPEC §7.1 base semantics, validate check 8)
     requires_eos: dict[str, bool] = field(default_factory=dict)
+    # bc-type id -> allowed `state` keys, for the composite bc-types that declare them
+    # (SPEC §7.1; absent = the bc-type constrains no key set)
+    bc_state_keys: dict[str, set[str]] = field(default_factory=dict)
 
     def has(self, kind: str, id_: str) -> bool:
         return id_ in self.ids.get(kind, set())
@@ -134,7 +144,7 @@ class Registry:
 
 def load_registry(repo_root: Path = REPO_ROOT) -> Registry:
     """Glob registry/<kind>/*.md; ids are filename stems. Non-.md (.gitkeep) ignored.
-    Parses equation frontmatter for requires_eos."""
+    Parses equation frontmatter for requires_eos and bc-type frontmatter for state_keys."""
     reg = Registry()
     for kind in REGISTRY_KINDS:
         d = repo_root / "registry" / kind
@@ -142,13 +152,17 @@ def load_registry(repo_root: Path = REPO_ROOT) -> Registry:
         if d.is_dir():
             for f in sorted(d.glob("*.md")):
                 found.add(f.stem)
+                if kind not in ("equations", "bc-types"):
+                    continue
+                try:
+                    fm_text, _ = split_frontmatter(f.read_text(encoding="utf-8"))
+                    fm = yaml.safe_load(fm_text) or {}
+                except (ValueError, yaml.YAMLError):
+                    fm = {}
                 if kind == "equations":
-                    try:
-                        fm_text, _ = split_frontmatter(f.read_text(encoding="utf-8"))
-                        fm = yaml.safe_load(fm_text) or {}
-                        reg.requires_eos[f.stem] = bool(fm.get("requires_eos", False))
-                    except (ValueError, yaml.YAMLError):
-                        reg.requires_eos[f.stem] = False
+                    reg.requires_eos[f.stem] = bool(fm.get("requires_eos", False))
+                elif isinstance(fm.get("state_keys"), list):
+                    reg.bc_state_keys[f.stem] = {str(k) for k in fm["state_keys"]}
         reg.ids[kind] = found
     return reg
 
@@ -403,6 +417,19 @@ def bc_types_present(fm: dict) -> set[str]:
         if isinstance(face, dict) and face.get("type"):
             out.add(face["type"])
     return out
+
+
+def has_conducting_wall(fm: dict) -> bool:
+    """True iff the entry poses a perfectly-conducting wall, as a domain face or an
+    internal boundary — the entries whose reference_results owe a `wall_pressure_bc`
+    (SPEC §5.3, §8.3 check 12)."""
+    if bc_types_present(fm) & CONDUCTING_WALL_BC_TYPES:
+        return True
+    for ib in fm.get("internal_boundaries") or []:
+        kind = ib.get("kind") if isinstance(ib, dict) else ib
+        if kind in CONDUCTING_WALL_IB_KINDS:
+            return True
+    return False
 
 
 def has_exact_solution(fm: dict) -> bool:
