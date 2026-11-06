@@ -3,6 +3,8 @@ all-mach-lid-driven-mhd-cavity	mhd(heat-conduction|viscosity)/gamma-law	heat-con
 axial-field-relaxation-cylindrical-conductor	magnetic-diffusion(resistivity)	resistivity	2	axis-singularity	dirichlet	none	false	false	false	5	true
 azimuthal-field-relaxation-cylindrical-conductor	magnetic-diffusion(resistivity)	resistivity	2	axis-singularity	dirichlet	none	false	false	false	5	true
 converging-shock-parallel-pinch-material-interface	mhd(resistivity)/gamma-law+mhd(resistivity)/gamma-law@material-contact	resistivity	2	multi-material-interface	neumann	material-contact	true	false	true	2	false
+explosion-cylindrical-2d	hydro/gamma-law		2	none	outflow	none	false	false	false	3	false
+explosion-spherical-3d	hydro/gamma-law		3	none	outflow	none	false	false	false	3	false
 field-line-drag-conducting-object	mhd/gamma-law		2	none	periodic	none	false	false	true	3	false
 field-loop-advection-low-mach	mhd/gamma-law		2	none	periodic	none	false	false	false	3	false
 ideal-mhd-blast-wave	mhd/gamma-law		2	none	outflow	none	false	false	false	2	false
@@ -21,6 +23,7 @@ permeable-core-thin-shell-diffusion	magnetic-diffusion(resistivity)+magnetostati
 resistive-field-soak-cylindrical-material-interface	magnetic-diffusion(resistivity)+magnetic-diffusion(resistivity)@electromagnetic-coupling	resistivity	2	axis-singularity|multi-material-interface	periodic	electromagnetic-coupling	true	false	true	4	false
 resistive-field-soak-material-slab-interface	mhd(resistivity)/gamma-law+mhd(resistivity)/gamma-law@material-contact	resistivity	2	multi-material-interface	neumann	material-contact	true	false	true	5	true
 rotated-sod-embedded-rectangle	hydro/gamma-law		2	oblique-to-grid	outflow	none	false	false	true	5	true
+shock-reflection-wedge-single-mach	hydro/gamma-law		2	oblique-to-grid	outflow|reflecting	none	false	false	true	2	false
 shocked-bubble-material-interface	mhd(resistivity)/gamma-law+mhd(resistivity)/gamma-law@material-contact	resistivity	2	multi-material-interface	outflow	material-contact	true	false	true	2	false
 smooth-mhd-vortex	mhd/gamma-law		2	none	periodic	none	false	false	false	5	true
 standing-acoustic-wave-cylinder	hydro/gamma-law		2	axis-singularity	reflecting	none	false	false	false	5	true
